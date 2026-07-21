@@ -14,7 +14,8 @@ export const load: PageServerLoad = async (event) => {
 			generatedMessage: application.generatedMessage,
 			createdAt: application.createdAt,
 			status: application.status,
-			listingTitle: listing.title
+			listingTitle: listing.title,
+			listingUrl: listing.sourceUrl
 		})
 		.from(application)
 		.innerJoin(listing, eq(application.listingId, listing.id))

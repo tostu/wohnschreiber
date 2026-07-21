@@ -28,7 +28,17 @@
 		<span class="ws-eyebrow text-(--color-sage)">Bereit zum Versenden</span>
 	</div>
 	<div class="flex flex-wrap items-center justify-between gap-4">
-		<h1 class="ws-title mt-2">für „{data.application.listingTitle}"</h1>
+		<h1 class="ws-title mt-2">
+			für „{data.application.listingTitle}"
+			{#if data.application.listingUrl}
+				<a
+					href={data.application.listingUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="ml-2 text-sm font-medium text-(--color-rust) underline">Anzeige ansehen</a
+				>
+			{/if}
+		</h1>
 		<form method="POST" action="?/updateStatus" use:enhance>
 			<select
 				name="status"

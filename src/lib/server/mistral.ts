@@ -24,6 +24,7 @@ export interface ListingInfo {
 	rent: number | null;
 	address: string | null;
 	description: string;
+	contactName: string | null;
 }
 
 export async function generateCoverLetter(params: {
@@ -36,11 +37,12 @@ export async function generateCoverLetter(params: {
 Schreibe ein kurzes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (max. 200 Wörter), das direkt als Kontaktnachricht verschickt werden kann.
 Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
 Gib ausschließlich den Nachrichtentext zurück, ohne Anrede-Platzhalter wie "[Name einfügen]" und ohne Erklärungen drumherum.
-Verwende keinen Gedankenstrich (–, —) im Text, auch nicht als Satzzeichen zur Abtrennung von Nebensätzen.`;
+Verwende keinen Gedankenstrich (–, —) im Text, auch nicht als Satzzeichen zur Abtrennung von Nebensätzen.
+${listing.contactName ? `Verwende in der Anrede den Namen des Ansprechpartners ("${listing.contactName}"), z. B. "Hallo ${listing.contactName},". Falls der Name eher wie Initialen als ein echter Vorname wirkt, verwende stattdessen eine neutrale Anrede wie "Hallo,".` : 'Verwende eine neutrale Anrede wie "Hallo,", da kein Name des Ansprechpartners bekannt ist.'}`;
 
 	const userPrompt = `Anzeige:
 Titel: ${listing.title}
-${listing.rent ? `Miete: ${listing.rent} €\n` : ''}${listing.address ? `Adresse/Lage: ${listing.address}\n` : ''}Beschreibung: ${listing.description}
+${listing.rent ? `Miete: ${listing.rent} €\n` : ''}${listing.address ? `Adresse/Lage: ${listing.address}\n` : ''}${listing.contactName ? `Ansprechpartner: ${listing.contactName}\n` : ''}Beschreibung: ${listing.description}
 
 Bewerber:
 Name: ${profile.fullName}

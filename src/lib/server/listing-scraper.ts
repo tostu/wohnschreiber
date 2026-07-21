@@ -5,6 +5,7 @@ export interface ScrapedListing {
 	rent: number | null;
 	address: string | null;
 	description: string;
+	contactName: string | null;
 }
 
 /** Parses a German-formatted euro amount ("1.200,50 €") into a rounded integer. */
@@ -70,7 +71,17 @@ export async function fetchListingInfo(url: string): Promise<ScrapedListing | nu
 		const addressMatch = html.match(/(\d{5})\s+([A-Za-zÀ-ÿ\- ]+)/);
 		const address = addressMatch ? `${addressMatch[1]} ${addressMatch[2].trim()}` : null;
 
-		return { title, rent, address, description };
+		// wg-gesucht masks the poster's real name behind an image (alt="public name") for
+		// logged-out requests; only initials in the avatar are plain text. Grab whichever
+		// is available as a best-effort default — the user can correct it in the UI.
+		const profileImgAlt = $('.user_profile_info img').first().attr('alt')?.trim();
+		const initials = $('.profile_image_initials').first().text().replace(/\s+/g, ' ').trim();
+		const contactName =
+			profileImgAlt && profileImgAlt.toLowerCase() !== 'public name'
+				? profileImgAlt
+				: initials || null;
+
+		return { title, rent, address, description, contactName };
 	} catch {
 		return null;
 	}

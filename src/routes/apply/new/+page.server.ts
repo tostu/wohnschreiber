@@ -63,6 +63,7 @@ export const actions: Actions = {
 		const rentRaw = formData.get('rent')?.toString().trim();
 		const rent = rentRaw ? parseInt(rentRaw, 10) : null;
 		const address = formData.get('address')?.toString().trim() || null;
+		const contactName = formData.get('contactName')?.toString().trim() || null;
 		const selectedDocumentIds = formData.getAll('documentIds').map((v) => v.toString());
 		const coverTemplateRaw = formData.get('coverTemplate')?.toString();
 		const coverTemplate: CoverTemplate = coverTemplateValues.includes(
@@ -89,6 +90,7 @@ export const actions: Actions = {
 			title,
 			rent,
 			address,
+			contactName,
 			description
 		});
 
@@ -103,7 +105,7 @@ export const actions: Actions = {
 					monthlyNetIncome: userProfile.monthlyNetIncome,
 					aboutMe: userProfile.aboutMe
 				},
-				listing: { title, rent, address, description }
+				listing: { title, rent, address, description, contactName }
 			});
 		} catch {
 			return fail(502, {

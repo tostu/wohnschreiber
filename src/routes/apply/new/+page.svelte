@@ -10,6 +10,7 @@
 	let title = $state('');
 	let rent = $state('');
 	let address = $state('');
+	let contactName = $state('');
 	let description = $state('');
 	let selectedDocumentIds = $state<string[]>([]);
 	let extracting = $state(false);
@@ -26,6 +27,7 @@
 			title = form.extracted.title;
 			rent = form.extracted.rent ? String(form.extracted.rent) : '';
 			address = form.extracted.address ?? '';
+			contactName = form.extracted.contactName ?? '';
 			description = form.extracted.description;
 		}
 	});
@@ -122,6 +124,15 @@
 					<input name="address" bind:value={address} class="ws-input" />
 				</label>
 			</div>
+
+			<label class="flex flex-col gap-1.5">
+				<span class="ws-label"
+					>Ansprechpartner <span class="font-normal text-(--color-ink-faint)"
+						>optional, für die Anrede</span
+					></span
+				>
+				<input name="contactName" bind:value={contactName} class="ws-input" />
+			</label>
 
 			<label class="flex flex-col gap-1.5">
 				<span class="ws-label">Beschreibung</span>

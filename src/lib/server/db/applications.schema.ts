@@ -11,6 +11,7 @@ export const listing = pgTable('listing', {
 	title: text('title').notNull(),
 	rent: integer('rent'),
 	address: text('address'),
+	contactName: text('contact_name'),
 	description: text('description').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
@@ -20,6 +21,9 @@ export type ApplicationStatus = (typeof applicationStatusValues)[number];
 
 export const coverTemplateValues = ['none', 'classic-centered'] as const;
 export type CoverTemplate = (typeof coverTemplateValues)[number];
+
+export const coverFontValues = ['serif', 'sans'] as const;
+export type CoverFont = (typeof coverFontValues)[number];
 
 export const application = pgTable('application', {
 	id: text('id').primaryKey(),

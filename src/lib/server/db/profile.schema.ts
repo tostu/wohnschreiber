@@ -1,4 +1,4 @@
-import { pgTable, text, integer, date } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, date, doublePrecision } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
 
 export const profile = pgTable('profile', {
@@ -15,5 +15,9 @@ export const profile = pgTable('profile', {
 	city: text('city'),
 	phone: text('phone'),
 	portraitPath: text('portrait_path'),
-	portraitMimeType: text('portrait_mime_type')
+	portraitMimeType: text('portrait_mime_type'),
+	// Fractional crop offset within [-1, 1], 0 = centered. Lets the user re-frame a
+	// portrait whose face isn't centered before it's cropped into the cover page circle.
+	portraitOffsetX: doublePrecision('portrait_offset_x').notNull().default(0),
+	portraitOffsetY: doublePrecision('portrait_offset_y').notNull().default(0)
 });

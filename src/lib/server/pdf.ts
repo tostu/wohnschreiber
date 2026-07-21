@@ -11,13 +11,17 @@ import {
 	pushGraphicsState
 } from 'pdf-lib';
 import { readFile } from './storage';
-import type { CoverTemplate } from './db/applications.schema';
+import type { CoverTemplate, CoverFont } from './db/applications.schema';
 
 const PAGE_WIDTH = 595.28; // A4 at 72dpi
 const PAGE_HEIGHT = 841.89;
 const MARGIN = 56;
 const FONT_SIZE = 11;
 const LINE_HEIGHT = 16;
+
+const LETTER_MARGIN = 72;
+const LETTER_FONT_SIZE = 12;
+const LETTER_LINE_HEIGHT = 20;
 
 /** Drops characters the standard WinAnsi-encoded font can't render (e.g. emoji). */
 function sanitizeForFont(text: string, font: import('pdf-lib').PDFFont): string {
@@ -33,7 +37,12 @@ function sanitizeForFont(text: string, font: import('pdf-lib').PDFFont): string 
 	return result;
 }
 
-function wrapText(text: string, font: import('pdf-lib').PDFFont, maxWidth: number): string[] {
+function wrapText(
+	text: string,
+	font: import('pdf-lib').PDFFont,
+	maxWidth: number,
+	size: number = FONT_SIZE
+): string[] {
 	const lines: string[] = [];
 	for (const paragraph of sanitizeForFont(text, font).split('\n')) {
 		if (paragraph.trim() === '') {
@@ -43,7 +52,7 @@ function wrapText(text: string, font: import('pdf-lib').PDFFont, maxWidth: numbe
 		let current = '';
 		for (const word of paragraph.split(' ')) {
 			const candidate = current ? `${current} ${word}` : word;
-			if (font.widthOfTextAtSize(candidate, FONT_SIZE) > maxWidth && current) {
+			if (font.widthOfTextAtSize(candidate, size) > maxWidth && current) {
 				lines.push(current);
 				current = word;
 			} else {
@@ -57,25 +66,27 @@ function wrapText(text: string, font: import('pdf-lib').PDFFont, maxWidth: numbe
 
 async function addCoverLetterPages(pdf: PDFDocument, text: string) {
 	const font = await pdf.embedFont(StandardFonts.Helvetica);
-	const maxWidth = PAGE_WIDTH - MARGIN * 2;
-	const lines = wrapText(text, font, maxWidth);
+	const maxWidth = PAGE_WIDTH - LETTER_MARGIN * 2;
+	const lines = wrapText(text, font, maxWidth, LETTER_FONT_SIZE);
 
 	let page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-	let y = PAGE_HEIGHT - MARGIN;
+	let y = PAGE_HEIGHT - LETTER_MARGIN;
 
 	for (const line of lines) {
-		if (y < MARGIN) {
+		if (y < LETTER_MARGIN) {
 			page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-			y = PAGE_HEIGHT - MARGIN;
+			y = PAGE_HEIGHT - LETTER_MARGIN;
 		}
 		page.drawText(line, {
-			x: MARGIN,
+			x: LETTER_MARGIN,
 			y,
-			size: FONT_SIZE,
+			size: LETTER_FONT_SIZE,
 			font,
 			color: rgb(0, 0, 0)
 		});
-		y -= LINE_HEIGHT;
+		// Blank line marks a paragraph break: give it extra room so paragraphs read as
+		// distinct blocks rather than a slightly-longer gap between two body lines.
+		y -= line === '' ? LETTER_LINE_HEIGHT * 1.4 : LETTER_LINE_HEIGHT;
 	}
 }
 
@@ -157,12 +168,24 @@ export interface CoverPageData {
 	phone: string | null;
 	email: string;
 	portrait: { bytes: Buffer; mimeType: string } | null;
+	/** Fractional crop offset within [-1, 1], 0 = centered. See profile.schema.ts. */
+	portraitOffsetX: number;
+	portraitOffsetY: number;
 }
 
-async function buildClassicCenteredCoverPage(pdf: PDFDocument, data: CoverPageData) {
+const COVER_FONTS: Record<CoverFont, { regular: StandardFonts; bold: StandardFonts }> = {
+	serif: { regular: StandardFonts.TimesRoman, bold: StandardFonts.TimesRomanBold },
+	sans: { regular: StandardFonts.Helvetica, bold: StandardFonts.HelveticaBold }
+};
+
+async function buildClassicCenteredCoverPage(
+	pdf: PDFDocument,
+	template: { regular: StandardFonts; bold: StandardFonts },
+	data: CoverPageData
+) {
 	const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-	const font = await pdf.embedFont(StandardFonts.TimesRoman);
-	const boldFont = await pdf.embedFont(StandardFonts.TimesRomanBold);
+	const font = await pdf.embedFont(template.regular);
+	const boldFont = await pdf.embedFont(template.bold);
 
 	let y = PAGE_HEIGHT - 180;
 
@@ -179,10 +202,15 @@ async function buildClassicCenteredCoverPage(pdf: PDFDocument, data: CoverPageDa
 		const width = image.width * scale;
 		const height = image.height * scale;
 
+		// How far the scaled image overhangs the circle on each axis; the offset shifts
+		// the crop within that slack instead of always center-cropping.
+		const slackX = Math.max(width - radius * 2, 0) / 2;
+		const slackY = Math.max(height - radius * 2, 0) / 2;
+
 		clipToCircle(page, cx, cy, radius);
 		page.drawImage(image, {
-			x: cx - width / 2,
-			y: cy - height / 2,
+			x: cx - width / 2 + data.portraitOffsetX * slackX,
+			y: cy - height / 2 - data.portraitOffsetY * slackY,
 			width,
 			height
 		});
@@ -267,7 +295,6 @@ export interface SelbstauskunftAnswers {
 	city: string;
 	phone: string;
 	email: string;
-	aboutMe: string | null;
 	occupationStatus: string;
 	jobTitle: string | null;
 	employer: string | null;
@@ -306,16 +333,36 @@ export async function buildSelbstauskunftPdf(data: SelbstauskunftAnswers): Promi
 		y -= LINE_HEIGHT * 1.5;
 	}
 
+	const LABEL_WIDTH = 190;
+
 	function drawField(label: string, value: string) {
-		const lines = wrapText(value || '—', font, maxWidth - 160);
-		ensureSpace(LINE_HEIGHT * lines.length);
-		page.drawText(label, { x: MARGIN, y, size: FONT_SIZE, font: boldFont, color: rgb(0, 0, 0) });
+		const labelLines = wrapText(label, boldFont, LABEL_WIDTH - 10);
+		const valueLines = wrapText(value || '—', font, maxWidth - LABEL_WIDTH);
+		const rows = Math.max(labelLines.length, valueLines.length);
+		ensureSpace(LINE_HEIGHT * rows);
 		let lineY = y;
-		for (const line of lines) {
-			page.drawText(line, { x: MARGIN + 160, y: lineY, size: FONT_SIZE, font, color: rgb(0, 0, 0) });
+		for (let i = 0; i < rows; i++) {
+			if (labelLines[i]) {
+				page.drawText(labelLines[i], {
+					x: MARGIN,
+					y: lineY,
+					size: FONT_SIZE,
+					font: boldFont,
+					color: rgb(0, 0, 0)
+				});
+			}
+			if (valueLines[i]) {
+				page.drawText(valueLines[i], {
+					x: MARGIN + LABEL_WIDTH,
+					y: lineY,
+					size: FONT_SIZE,
+					font,
+					color: rgb(0, 0, 0)
+				});
+			}
 			lineY -= LINE_HEIGHT;
 		}
-		y -= LINE_HEIGHT * lines.length;
+		y -= LINE_HEIGHT * rows;
 	}
 
 	ensureSpace(LINE_HEIGHT * 2);
@@ -330,7 +377,6 @@ export async function buildSelbstauskunftPdf(data: SelbstauskunftAnswers): Promi
 	drawField('Adresse', `${data.street}, ${data.city}`);
 	drawField('Telefon', data.phone);
 	drawField('E-Mail-Adresse', data.email);
-	if (data.aboutMe) drawField('Über mich/uns', data.aboutMe);
 
 	drawHeading('Berufliche Informationen');
 	drawField('Beruflicher Status', data.occupationStatus);
