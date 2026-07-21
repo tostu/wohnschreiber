@@ -19,15 +19,45 @@
 	<form
 		method="post"
 		action="?/save"
+		enctype="multipart/form-data"
 		use:enhance={() => {
 			saving = true;
 			return async ({ update }) => {
-				await update();
+				await update({ reset: false });
 				saving = false;
 			};
 		}}
 		class="ws-card mt-8 flex flex-col gap-5 p-6"
 	>
+		<div class="flex items-center gap-4">
+			{#if p?.portraitPath}
+				<img
+					src="/profile/portrait"
+					alt="Portrait"
+					class="h-20 w-20 shrink-0 rounded-full object-cover"
+				/>
+			{:else}
+				<div
+					class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-(--color-paper-line) text-center text-xs text-(--color-ink-faint)"
+				>
+					Kein Foto
+				</div>
+			{/if}
+			<label class="flex flex-1 flex-col gap-1.5">
+				<span class="ws-label"
+					>Portrait <span class="font-normal text-(--color-ink-faint)"
+						>(optional, für das Deckblatt)</span
+					></span
+				>
+				<input
+					type="file"
+					name="portrait"
+					accept=".jpg,.jpeg,.png"
+					class="text-xs text-(--color-ink-soft) file:mr-2 file:rounded-md file:border-0 file:bg-(--color-paper-line) file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-(--color-ink)"
+				/>
+			</label>
+		</div>
+
 		<label class="flex flex-col gap-1.5">
 			<span class="ws-label">Vollständiger Name</span>
 			<input name="fullName" required value={p?.fullName ?? ''} class="ws-input" />
@@ -36,6 +66,31 @@
 		<label class="flex flex-col gap-1.5">
 			<span class="ws-label">Beruf / Tätigkeit</span>
 			<input name="occupation" required value={p?.occupation ?? ''} class="ws-input" />
+		</label>
+
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<label class="flex flex-col gap-1.5">
+				<span class="ws-label"
+					>Straße &amp; Hausnummer <span class="font-normal text-(--color-ink-faint)"
+						>(optional)</span
+					></span
+				>
+				<input name="street" value={p?.street ?? ''} class="ws-input" />
+			</label>
+
+			<label class="flex flex-col gap-1.5">
+				<span class="ws-label"
+					>PLZ &amp; Ort <span class="font-normal text-(--color-ink-faint)">(optional)</span></span
+				>
+				<input name="city" value={p?.city ?? ''} class="ws-input" />
+			</label>
+		</div>
+
+		<label class="flex flex-col gap-1.5">
+			<span class="ws-label"
+				>Telefon <span class="font-normal text-(--color-ink-faint)">(optional)</span></span
+			>
+			<input name="phone" value={p?.phone ?? ''} class="ws-input" />
 		</label>
 
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">

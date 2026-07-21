@@ -10,5 +10,10 @@ export const profile = pgTable('profile', {
 	moveInEarliest: date('move_in_earliest').notNull(),
 	householdSize: integer('household_size').notNull().default(1),
 	monthlyNetIncome: integer('monthly_net_income'),
-	aboutMe: text('about_me')
+	aboutMe: text('about_me'),
+	street: text('street'),
+	city: text('city'),
+	phone: text('phone'),
+	portraitPath: text('portrait_path'),
+	portraitMimeType: text('portrait_mime_type')
 });
