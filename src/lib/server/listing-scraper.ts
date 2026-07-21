@@ -68,8 +68,32 @@ export async function fetchListingInfo(url: string): Promise<ScrapedListing | nu
 			rent = parseGermanEuro(rentText);
 		}
 
-		const addressMatch = html.match(/(\d{5})\s+([A-Za-zÀ-ÿ\- ]+)/);
-		const address = addressMatch ? `${addressMatch[1]} ${addressMatch[2].trim()}` : null;
+		// Scope to the dedicated "Adresse" panel instead of regex-scanning the whole HTML
+		// document, which can match unrelated 5-digit+word text elsewhere on the page (e.g.
+		// wg-gesucht's own company address embedded in a page-wide JSON-LD Organization block).
+		const addressLabel = $('h2.section_panel_title')
+			.filter((_, el) => $(el).text().trim() === 'Adresse')
+			.first();
+		const addressDetail = addressLabel.length
+			? addressLabel.parent().find('.section_panel_detail').first()
+			: null;
+		let address: string | null = null;
+		if (addressDetail && addressDetail.length) {
+			const lines: string[] = [];
+			let current = '';
+			addressDetail
+				.contents()
+				.each((_, node) => {
+					if (node.type === 'tag' && node.name === 'br') {
+						if (current.trim()) lines.push(current.trim());
+						current = '';
+					} else {
+						current += $(node).text();
+					}
+				});
+			if (current.trim()) lines.push(current.trim());
+			address = lines.length ? lines.join(', ') : null;
+		}
 
 		// wg-gesucht masks the poster's real name behind an image (alt="public name" /
 		// "Profilbild" / etc.) for logged-out requests; only initials in the avatar are
