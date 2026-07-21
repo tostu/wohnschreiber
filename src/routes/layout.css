@@ -34,6 +34,11 @@
 @media (prefers-color-scheme: dark) {
 	:root {
 		color-scheme: dark;
+		--color-paper: var(--color-paper-dark);
+		--color-paper-raised: var(--color-paper-raised-dark);
+		--color-paper-line: var(--color-paper-line-dark);
+		--color-ink: var(--color-ink-dark);
+		--color-ink-soft: var(--color-ink-soft-dark);
 	}
 }
 
@@ -262,6 +267,26 @@ h3 {
 	.ws-badge-optional {
 		background-color: var(--color-paper-line);
 		color: var(--color-ink-soft);
+	}
+
+	.ws-status-draft {
+		background-color: var(--color-paper-line);
+		color: var(--color-ink-soft);
+	}
+
+	.ws-status-contacted {
+		background-color: var(--color-amber-soft);
+		color: var(--color-amber);
+	}
+
+	.ws-status-rejected {
+		background-color: var(--color-rust-soft);
+		color: var(--color-rust-strong);
+	}
+
+	.ws-status-accepted {
+		background-color: var(--color-sage-soft);
+		color: var(--color-sage);
 	}
 
 	.ws-alert {

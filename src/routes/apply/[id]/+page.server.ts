@@ -1,8 +1,9 @@
-import { error } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import { error, fail, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
-import { application, listing } from '$lib/server/db/schema';
+import { application, listing, applicationStatusValues } from '$lib/server/db/schema';
+import type { ApplicationStatus } from '$lib/server/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -12,6 +13,7 @@ export const load: PageServerLoad = async (event) => {
 			id: application.id,
 			generatedMessage: application.generatedMessage,
 			createdAt: application.createdAt,
+			status: application.status,
 			listingTitle: listing.title
 		})
 		.from(application)
@@ -23,4 +25,30 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	return { application: row };
+};
+
+export const actions: Actions = {
+	updateStatus: async (event) => {
+		const user = requireUser(event);
+		const formData = await event.request.formData();
+		const status = formData.get('status')?.toString() as ApplicationStatus | undefined;
+
+		if (!status || !applicationStatusValues.includes(status)) {
+			return fail(400, { message: 'Ungültiger Status.' });
+		}
+
+		await db
+			.update(application)
+			.set({ status })
+			.where(and(eq(application.id, event.params.id), eq(application.userId, user.id)));
+	},
+
+	delete: async (event) => {
+		const user = requireUser(event);
+		await db
+			.delete(application)
+			.where(and(eq(application.id, event.params.id), eq(application.userId, user.id)));
+
+		redirect(302, '/apply');
+	}
 };
