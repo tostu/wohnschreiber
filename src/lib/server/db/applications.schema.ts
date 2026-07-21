@@ -15,6 +15,12 @@ export const listing = pgTable('listing', {
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+export const applicationStatusValues = ['draft', 'contacted', 'rejected', 'accepted'] as const;
+export type ApplicationStatus = (typeof applicationStatusValues)[number];
+
+export const coverTemplateValues = ['none', 'classic-centered'] as const;
+export type CoverTemplate = (typeof coverTemplateValues)[number];
+
 export const application = pgTable('application', {
 	id: text('id').primaryKey(),
 	userId: text('user_id')
@@ -25,6 +31,8 @@ export const application = pgTable('application', {
 		.references(() => listing.id, { onDelete: 'cascade' }),
 	generatedMessage: text('generated_message').notNull(),
 	pdfPath: text('pdf_path').notNull(),
+	status: text('status', { enum: applicationStatusValues }).notNull().default('draft'),
+	coverTemplate: text('cover_template', { enum: coverTemplateValues }).notNull().default('none'),
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
 

@@ -7,13 +7,15 @@ import {
 	profile,
 	listing,
 	application,
-	applicationDocument
+	applicationDocument,
+	coverTemplateValues,
+	type CoverTemplate
 } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fetchListingInfo } from '$lib/server/listing-scraper';
 import { generateCoverLetter } from '$lib/server/mistral';
-import { buildApplicationPdf } from '$lib/server/pdf';
-import { saveGeneratedFile } from '$lib/server/storage';
+import { buildApplicationPdf, type CoverPageData } from '$lib/server/pdf';
+import { readFile, saveGeneratedFile } from '$lib/server/storage';
 import { randomUUID } from 'node:crypto';
 
 export const load: PageServerLoad = async (event) => {
@@ -62,6 +64,12 @@ export const actions: Actions = {
 		const rent = rentRaw ? parseInt(rentRaw, 10) : null;
 		const address = formData.get('address')?.toString().trim() || null;
 		const selectedDocumentIds = formData.getAll('documentIds').map((v) => v.toString());
+		const coverTemplateRaw = formData.get('coverTemplate')?.toString();
+		const coverTemplate: CoverTemplate = coverTemplateValues.includes(
+			coverTemplateRaw as CoverTemplate
+		)
+			? (coverTemplateRaw as CoverTemplate)
+			: 'none';
 
 		if (!title || !description) {
 			return fail(400, { message: 'Titel und Beschreibung der Anzeige werden benötigt.' });
@@ -104,9 +112,30 @@ export const actions: Actions = {
 			});
 		}
 
+		let portrait: CoverPageData['portrait'] = null;
+		if (coverTemplate !== 'none' && userProfile.portraitPath && userProfile.portraitMimeType) {
+			portrait = {
+				bytes: await readFile(userProfile.portraitPath),
+				mimeType: userProfile.portraitMimeType
+			};
+		}
+
+		const coverData: CoverPageData = {
+			fullName: userProfile.fullName,
+			wgTitle: title,
+			wgAddress: address,
+			street: userProfile.street,
+			city: userProfile.city,
+			phone: userProfile.phone,
+			email: user.email,
+			portrait
+		};
+
 		const pdfBuffer = await buildApplicationPdf(
 			generatedMessage,
-			docsToAttach.map((d) => ({ storagePath: d.storagePath, mimeType: d.mimeType }))
+			docsToAttach.map((d) => ({ storagePath: d.storagePath, mimeType: d.mimeType })),
+			coverTemplate,
+			coverData
 		);
 		const applicationId = randomUUID();
 		const pdfPath = await saveGeneratedFile(user.id, `bewerbung-${applicationId}.pdf`, pdfBuffer);
@@ -116,7 +145,8 @@ export const actions: Actions = {
 			userId: user.id,
 			listingId,
 			generatedMessage,
-			pdfPath
+			pdfPath,
+			coverTemplate
 		});
 
 		if (docsToAttach.length > 0) {

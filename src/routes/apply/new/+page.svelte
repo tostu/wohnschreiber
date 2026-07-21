@@ -14,6 +14,12 @@
 	let selectedDocumentIds = $state<string[]>([]);
 	let extracting = $state(false);
 	let generating = $state(false);
+	let coverTemplate = $state('none');
+
+	const coverTemplates = [
+		{ value: 'none', label: 'Kein Deckblatt' },
+		{ value: 'classic-centered', label: 'Klassisch (zentriert)' }
+	];
 
 	$effect(() => {
 		if (form && 'extracted' in form && form.extracted) {
@@ -129,7 +135,36 @@
 			</label>
 
 			<div class="border-t border-(--color-paper-line) pt-5">
-				<h2 class="text-sm font-semibold text-(--color-ink-soft)">3 · Dokumente auswählen</h2>
+				<h2 class="text-sm font-semibold text-(--color-ink-soft)">3 · Deckblatt</h2>
+				<div class="mt-3 flex flex-wrap gap-2">
+					{#each coverTemplates as t (t.value)}
+						<label
+							class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors {coverTemplate ===
+							t.value
+								? 'border-(--color-rust) bg-(--color-rust)/10'
+								: 'border-(--color-paper-line)'}"
+						>
+							<input
+								type="radio"
+								name="coverTemplate"
+								value={t.value}
+								bind:group={coverTemplate}
+								class="accent-(--color-rust)"
+							/>
+							{t.label}
+						</label>
+					{/each}
+				</div>
+				{#if coverTemplate === 'classic-centered' && !data.profile?.portraitPath}
+					<p class="mt-2 text-sm text-(--color-ink-faint)">
+						Kein Portrait im <a href={resolve('/profile')} class="underline">Profil</a> hinterlegt —
+						das Deckblatt wird ohne Foto erstellt.
+					</p>
+				{/if}
+			</div>
+
+			<div class="border-t border-(--color-paper-line) pt-5">
+				<h2 class="text-sm font-semibold text-(--color-ink-soft)">4 · Dokumente auswählen</h2>
 				<div class="mt-3 flex flex-col gap-2">
 					{#each data.documents as doc (doc.id)}
 						<label
