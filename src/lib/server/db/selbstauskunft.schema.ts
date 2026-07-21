@@ -13,7 +13,6 @@ export const selbstauskunft = pgTable('selbstauskunft', {
 	city: text('city').notNull(),
 	phone: text('phone').notNull(),
 	email: text('email').notNull(),
-	aboutMe: text('about_me'),
 	occupationStatus: text('occupation_status').notNull(),
 	jobTitle: text('job_title'),
 	employer: text('employer'),

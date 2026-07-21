@@ -102,14 +102,6 @@
 					<input type="email" name="email" required value={str('email')} class="ws-input" />
 				</label>
 			</div>
-
-			<label class="flex flex-col gap-1.5">
-				<span class="ws-label"
-					>Über mich/uns <span class="font-normal text-(--color-ink-faint)">(optional)</span
-					></span
-				>
-				<textarea name="aboutMe" rows="4" class="ws-input resize-none">{str('aboutMe')}</textarea>
-			</label>
 		</div>
 
 		<div class="flex flex-col gap-5 border-t border-(--color-paper-line) pt-5">

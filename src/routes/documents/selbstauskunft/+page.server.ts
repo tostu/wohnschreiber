@@ -34,8 +34,7 @@ export const load: PageServerLoad = async (event) => {
 		answers: {
 			firstName: first ?? '',
 			lastName: rest.join(' '),
-			email: user.email,
-			aboutMe: existingProfile?.aboutMe ?? null
+			email: user.email
 		}
 	};
 };
@@ -53,7 +52,6 @@ export const actions: Actions = {
 		const city = formData.get('city')?.toString().trim() ?? '';
 		const phone = formData.get('phone')?.toString().trim() ?? '';
 		const email = formData.get('email')?.toString().trim() ?? '';
-		const aboutMe = formData.get('aboutMe')?.toString().trim() || null;
 		const occupationStatus = formData.get('occupationStatus')?.toString().trim() ?? '';
 		const jobTitle = formData.get('jobTitle')?.toString().trim() || null;
 		const employer = formData.get('employer')?.toString().trim() || null;
@@ -96,7 +94,6 @@ export const actions: Actions = {
 			city,
 			phone,
 			email,
-			aboutMe,
 			occupationStatus,
 			jobTitle,
 			employer,
