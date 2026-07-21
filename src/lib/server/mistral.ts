@@ -35,7 +35,8 @@ export async function generateCoverLetter(params: {
 	const systemPrompt = `Du bist ein Assistent, der Bewerbern beim Verfassen von Kontaktnachrichten für Wohnungs-/WG-Anzeigen auf wg-gesucht.de hilft.
 Schreibe ein kurzes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (max. 200 Wörter), das direkt als Kontaktnachricht verschickt werden kann.
 Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
-Gib ausschließlich den Nachrichtentext zurück, ohne Anrede-Platzhalter wie "[Name einfügen]" und ohne Erklärungen drumherum.`;
+Gib ausschließlich den Nachrichtentext zurück, ohne Anrede-Platzhalter wie "[Name einfügen]" und ohne Erklärungen drumherum.
+Verwende keinen Gedankenstrich (–, —) im Text, auch nicht als Satzzeichen zur Abtrennung von Nebensätzen.`;
 
 	const userPrompt = `Anzeige:
 Titel: ${listing.title}
@@ -61,5 +62,13 @@ Verfasse jetzt die Kontaktnachricht.`;
 	if (typeof content !== 'string' || !content.trim()) {
 		throw new Error('Mistral hat keinen Nachrichtentext geliefert.');
 	}
-	return content.trim();
+	return stripDashes(content.trim());
+}
+
+/** KI ignoriert Prompt-Verbot manchmal. Ersetz Gedankenstrich hart durch Komma. */
+function stripDashes(text: string): string {
+	return text
+		.replace(/\s*[–—]\s*/g, ', ')
+		.replace(/,\s*,/g, ',')
+		.replace(/ {2,}/g, ' ');
 }
