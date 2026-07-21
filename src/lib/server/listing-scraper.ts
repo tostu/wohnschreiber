@@ -7,6 +7,13 @@ export interface ScrapedListing {
 	description: string;
 }
 
+/** Parses a German-formatted euro amount ("1.200,50 €") into a rounded integer. */
+function parseGermanEuro(text: string): number | null {
+	const match = text.match(/(\d[\d.,]*)\s*€/);
+	if (!match) return null;
+	return Math.round(parseFloat(match[1].replace(/\./g, '').replace(',', '.')));
+}
+
 /**
  * Best-effort scrape of a WG-Gesucht listing page. wg-gesucht's markup and bot
  * protection can change at any time, so failures are expected — callers must
@@ -33,12 +40,32 @@ export async function fetchListingInfo(url: string): Promise<ScrapedListing | nu
 			.trim();
 		const description = bodyText || $('body').text().replace(/\s+/g, ' ').trim().slice(0, 4000);
 
-		const rentText = $('*:contains("Miete")')
-			.filter((_, el) => /\d/.test($(el).text()))
-			.first()
-			.text();
-		const rentMatch = rentText.match(/(\d[\d.,]*)\s*€/);
-		const rent = rentMatch ? parseInt(rentMatch[1].replace(/[.,]/g, ''), 10) : null;
+		// "Kosten" panel has a dedicated "Miete:" row; match on it directly instead of the
+		// first element that merely contains the word "Miete" somewhere in its text, which
+		// can match a page-wide ancestor and pick up an unrelated € amount (e.g. a promo price).
+		const rentLabel = $('.section_panel_detail')
+			.filter((_, el) => $(el).text().trim() === 'Miete:')
+			.first();
+		let rent = rentLabel.length
+			? parseGermanEuro(rentLabel.parent().next().find('.section_panel_value').first().text())
+			: null;
+
+		if (rent === null) {
+			const gesamtmieteLabel = $('.key_fact_detail')
+				.filter((_, el) => $(el).text().trim() === 'Gesamtmiete')
+				.first();
+			rent = gesamtmieteLabel.length
+				? parseGermanEuro(gesamtmieteLabel.closest('div').find('.key_fact_value').first().text())
+				: null;
+		}
+
+		if (rent === null) {
+			const rentText = $('*:contains("Miete")')
+				.filter((_, el) => /\d/.test($(el).text()))
+				.first()
+				.text();
+			rent = parseGermanEuro(rentText);
+		}
 
 		const addressMatch = html.match(/(\d{5})\s+([A-Za-zÀ-ÿ\- ]+)/);
 		const address = addressMatch ? `${addressMatch[1]} ${addressMatch[2].trim()}` : null;
