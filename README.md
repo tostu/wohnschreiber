@@ -1,42 +1,64 @@
-# sv
+# wohnschreiber
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+App that helps you apply to WG-Gesucht room listings faster: paste a listing URL, it scrapes the
+key facts (rent, address, contact name) and generates a tailored application (cover letter,
+Selbstauskunft) using Mistral AI, backed by your saved profile and documents.
 
-## Creating a project
+## Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+SvelteKit (TypeScript), Tailwind CSS, Drizzle ORM (PostgreSQL), better-auth, Paraglide (i18n:
+en/de), Playwright + Vitest, Mistral AI.
+
+## Setup
 
 ```sh
-# create a new project
-npx sv create my-app
+bun install
 ```
 
-To recreate this project with the same configuration:
+Copy `.env.example` to `.env` and fill in the values:
+
+- `DATABASE_URL` — PostgreSQL connection string
+- `ORIGIN` — public origin of the app (needed by better-auth)
+- `BETTER_AUTH_SECRET` — high-entropy secret (32+ chars in production)
+- `MISTRAL_API_KEY` — Mistral AI API key, used to generate applications
+- `UPLOAD_DIR` — local directory for uploaded documents/portraits
+
+Start the database (Docker) and push the schema:
 
 ```sh
-# recreate this project
-bun x sv@0.16.4 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:node" drizzle="database:postgresql+postgresql:postgres.js+docker:yes" better-auth="demo:password" paraglide="languageTags:en, de+demo:yes" mcp="ide:claude-code,gemini+setup:remote" --install bun wohnschreiber
+bun run db:start
+bun run db:push
 ```
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
 ```sh
-npm run dev
+bun run dev
 
 # or start the server and open the app in a new browser tab
-npm run dev -- --open
+bun run dev -- --open
 ```
 
 ## Building
 
-To create a production version of your app:
-
 ```sh
-npm run build
+bun run build
 ```
 
-You can preview the production build with `npm run preview`.
+Preview the production build with `bun run preview`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Testing & linting
+
+```sh
+bun run test        # unit tests + e2e (Playwright)
+bun run test:unit    # unit tests only
+bun run lint         # prettier + eslint
+```
+
+## Database
+
+```sh
+bun run db:generate  # generate a new migration from schema changes
+bun run db:migrate   # apply migrations
+bun run db:studio    # open Drizzle Studio
+```
