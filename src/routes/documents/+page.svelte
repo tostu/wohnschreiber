@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { Tabs } from 'bits-ui';
 	import DocumentUploadCard from '$lib/components/DocumentUploadCard.svelte';
+	import SelbstauskunftCard from '$lib/components/SelbstauskunftCard.svelte';
 	import type { PageServerData } from './$types';
 
 	let { data }: { data: PageServerData } = $props();
 
 	const requiredTypes: { type: string; label: string }[] = [
-		{ type: 'selbstauskunft', label: 'Selbstauskunft' },
 		{ type: 'bonitaetsnachweis', label: 'Bonitätsnachweis' },
 		{ type: 'personalausweis', label: 'Personalausweis' }
 	];
@@ -22,7 +22,9 @@
 		return data.documents.find((d) => d.type === type) ?? null;
 	}
 
-	const missingRequired = $derived(requiredTypes.filter(({ type }) => !findDoc(type)).length);
+	const missingRequired = $derived(
+		requiredTypes.filter(({ type }) => !findDoc(type)).length + (findDoc('selbstauskunft') ? 0 : 1)
+	);
 </script>
 
 <div class="ws-shell">
@@ -57,6 +59,7 @@
 		</Tabs.List>
 
 		<Tabs.Content value="required" class="mt-4 flex flex-col gap-3">
+			<SelbstauskunftCard existing={findDoc('selbstauskunft')} />
 			{#each requiredTypes as { type, label } (type)}
 				<DocumentUploadCard {type} {label} required={true} existing={findDoc(type)} />
 			{/each}

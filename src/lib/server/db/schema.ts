@@ -10,3 +10,4 @@ export * from './auth.schema';
 export * from './profile.schema';
 export * from './documents.schema';
 export * from './applications.schema';
+export * from './selbstauskunft.schema';
