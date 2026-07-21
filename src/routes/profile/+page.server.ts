@@ -8,6 +8,12 @@ import { saveDocument, deleteFile } from '$lib/server/storage';
 
 const PORTRAIT_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
+function clampOffset(value: FormDataEntryValue | null): number {
+	const parsed = parseFloat(value?.toString() ?? '0');
+	if (!Number.isFinite(parsed)) return 0;
+	return Math.min(1, Math.max(-1, parsed));
+}
+
 export const load: PageServerLoad = async (event) => {
 	const user = requireUser(event);
 	const [existing] = await db.select().from(profile).where(eq(profile.userId, user.id));
@@ -29,6 +35,8 @@ export const actions: Actions = {
 		const street = formData.get('street')?.toString().trim() || null;
 		const city = formData.get('city')?.toString().trim() || null;
 		const phone = formData.get('phone')?.toString().trim() || null;
+		const portraitOffsetX = clampOffset(formData.get('portraitOffsetX'));
+		const portraitOffsetY = clampOffset(formData.get('portraitOffsetY'));
 
 		if (!fullName || !occupation || !moveInEarliest) {
 			return fail(400, { message: 'Name, Beruf und Einzugsdatum sind Pflichtfelder.' });
@@ -64,7 +72,9 @@ export const actions: Actions = {
 				city,
 				phone,
 				portraitPath,
-				portraitMimeType
+				portraitMimeType,
+				portraitOffsetX,
+				portraitOffsetY
 			})
 			.onConflictDoUpdate({
 				target: profile.userId,
@@ -79,7 +89,9 @@ export const actions: Actions = {
 					city,
 					phone,
 					portraitPath,
-					portraitMimeType
+					portraitMimeType,
+					portraitOffsetX,
+					portraitOffsetY
 				}
 			});
 

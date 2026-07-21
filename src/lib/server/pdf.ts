@@ -266,11 +266,12 @@ async function buildClassicCenteredCoverPage(
 export async function buildCoverPage(
 	pdf: PDFDocument,
 	template: CoverTemplate,
+	font: CoverFont,
 	data: CoverPageData
 ): Promise<void> {
 	if (template === 'none') return;
 	if (template === 'classic-centered') {
-		await buildClassicCenteredCoverPage(pdf, data);
+		await buildClassicCenteredCoverPage(pdf, COVER_FONTS[font], data);
 	}
 }
 
@@ -437,11 +438,12 @@ export async function buildApplicationPdf(
 	coverLetterText: string,
 	documents: { storagePath: string; mimeType: string }[],
 	coverTemplate: CoverTemplate,
+	coverFont: CoverFont,
 	coverData: CoverPageData
 ): Promise<Buffer> {
 	const pdf = await PDFDocument.create();
 
-	await buildCoverPage(pdf, coverTemplate, coverData);
+	await buildCoverPage(pdf, coverTemplate, coverFont, coverData);
 	await addCoverLetterPages(pdf, coverLetterText);
 	for (const doc of documents) {
 		await appendDocument(pdf, doc.storagePath, doc.mimeType);

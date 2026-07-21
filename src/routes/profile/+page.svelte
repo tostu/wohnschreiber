@@ -6,6 +6,12 @@
 	const p = $derived(data.profile);
 
 	let saving = $state(false);
+	let portraitOffsetX = $state(p?.portraitOffsetX ?? 0);
+	let portraitOffsetY = $state(p?.portraitOffsetY ?? 0);
+	// object-position%: 50 = centered; offsetY 1 (show more top) → 0%, -1 (show more bottom) → 100%.
+	const previewObjectPosition = $derived(
+		`${50 + portraitOffsetX * 50}% ${50 - portraitOffsetY * 50}%`
+	);
 </script>
 
 <div class="ws-shell">
@@ -34,6 +40,7 @@
 				<img
 					src="/profile/portrait"
 					alt="Portrait"
+					style="object-position: {previewObjectPosition}"
 					class="h-20 w-20 shrink-0 rounded-full object-cover"
 				/>
 			{:else}
@@ -57,6 +64,35 @@
 				/>
 			</label>
 		</div>
+
+		{#if p?.portraitPath}
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<label class="flex flex-col gap-1.5">
+					<span class="ws-label">Portrait horizontal</span>
+					<input
+						type="range"
+						name="portraitOffsetX"
+						min="-1"
+						max="1"
+						step="0.05"
+						bind:value={portraitOffsetX}
+						class="accent-(--color-rust)"
+					/>
+				</label>
+				<label class="flex flex-col gap-1.5">
+					<span class="ws-label">Portrait vertikal</span>
+					<input
+						type="range"
+						name="portraitOffsetY"
+						min="-1"
+						max="1"
+						step="0.05"
+						bind:value={portraitOffsetY}
+						class="accent-(--color-rust)"
+					/>
+				</label>
+			</div>
+		{/if}
 
 		<label class="flex flex-col gap-1.5">
 			<span class="ws-label">Vollständiger Name</span>

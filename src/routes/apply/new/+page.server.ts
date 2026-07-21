@@ -9,7 +9,9 @@ import {
 	application,
 	applicationDocument,
 	coverTemplateValues,
-	type CoverTemplate
+	coverFontValues,
+	type CoverTemplate,
+	type CoverFont
 } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fetchListingInfo } from '$lib/server/listing-scraper';
@@ -71,6 +73,10 @@ export const actions: Actions = {
 		)
 			? (coverTemplateRaw as CoverTemplate)
 			: 'none';
+		const coverFontRaw = formData.get('coverFont')?.toString();
+		const coverFont: CoverFont = coverFontValues.includes(coverFontRaw as CoverFont)
+			? (coverFontRaw as CoverFont)
+			: 'serif';
 
 		if (!title || !description) {
 			return fail(400, { message: 'Titel und Beschreibung der Anzeige werden benötigt.' });
@@ -130,13 +136,16 @@ export const actions: Actions = {
 			city: userProfile.city,
 			phone: userProfile.phone,
 			email: user.email,
-			portrait
+			portrait,
+			portraitOffsetX: userProfile.portraitOffsetX,
+			portraitOffsetY: userProfile.portraitOffsetY
 		};
 
 		const pdfBuffer = await buildApplicationPdf(
 			generatedMessage,
 			docsToAttach.map((d) => ({ storagePath: d.storagePath, mimeType: d.mimeType })),
 			coverTemplate,
+			coverFont,
 			coverData
 		);
 		const applicationId = randomUUID();
@@ -148,7 +157,8 @@ export const actions: Actions = {
 			listingId,
 			generatedMessage,
 			pdfPath,
-			coverTemplate
+			coverTemplate,
+			coverFont
 		});
 
 		if (docsToAttach.length > 0) {

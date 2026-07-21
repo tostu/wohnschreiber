@@ -16,10 +16,16 @@
 	let extracting = $state(false);
 	let generating = $state(false);
 	let coverTemplate = $state('none');
+	let coverFont = $state('serif');
 
 	const coverTemplates = [
 		{ value: 'none', label: 'Kein Deckblatt' },
 		{ value: 'classic-centered', label: 'Klassisch (zentriert)' }
+	];
+
+	const coverFonts = [
+		{ value: 'serif', label: 'Serif (Times)' },
+		{ value: 'sans', label: 'Serifenlos (Helvetica)' }
 	];
 
 	$effect(() => {
@@ -171,6 +177,30 @@
 						Kein Portrait im <a href={resolve('/profile')} class="underline">Profil</a> hinterlegt —
 						das Deckblatt wird ohne Foto erstellt.
 					</p>
+				{/if}
+				{#if coverTemplate !== 'none'}
+					<div class="mt-4">
+						<span class="ws-label">Schriftart</span>
+						<div class="mt-2 flex flex-wrap gap-2">
+							{#each coverFonts as f (f.value)}
+								<label
+									class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors {coverFont ===
+									f.value
+										? 'border-(--color-rust) bg-(--color-rust)/10'
+										: 'border-(--color-paper-line)'}"
+								>
+									<input
+										type="radio"
+										name="coverFont"
+										value={f.value}
+										bind:group={coverFont}
+										class="accent-(--color-rust)"
+									/>
+									{f.label}
+								</label>
+							{/each}
+						</div>
+					</div>
 				{/if}
 			</div>
 

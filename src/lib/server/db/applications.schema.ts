@@ -37,6 +37,7 @@ export const application = pgTable('application', {
 	pdfPath: text('pdf_path').notNull(),
 	status: text('status', { enum: applicationStatusValues }).notNull().default('draft'),
 	coverTemplate: text('cover_template', { enum: coverTemplateValues }).notNull().default('none'),
+	coverFont: text('cover_font', { enum: coverFontValues }).notNull().default('serif'),
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
