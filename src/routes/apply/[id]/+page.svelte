@@ -13,37 +13,48 @@
 	}
 </script>
 
-<div class="mx-auto max-w-2xl px-4 py-10">
-	<h1 class="text-2xl font-semibold">Deine Bewerbung ist fertig</h1>
-	<p class="mt-1 text-sm text-gray-500">für „{data.application.listingTitle}"</p>
+<div class="ws-shell">
+	<div class="flex items-center gap-2 text-(--color-sage)">
+		<svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+			<circle cx="10" cy="10" r="8" />
+			<path d="M6.5 10.2 8.7 12.5 13.5 7.5" />
+		</svg>
+		<span class="ws-eyebrow text-(--color-sage)">Bereit zum Versenden</span>
+	</div>
+	<h1 class="ws-title mt-2">für „{data.application.listingTitle}"</h1>
 
-	<section class="mt-6 rounded-lg border border-gray-200 p-4">
-		<h2 class="font-medium">Kontaktnachricht für WG-Gesucht</h2>
-		<p class="mt-2 text-sm whitespace-pre-wrap text-gray-700">
+	<section class="ws-card mt-8 p-6">
+		<h2 class="text-sm font-semibold text-(--color-ink-soft)">Kontaktnachricht für WG-Gesucht</h2>
+		<p class="mt-3 leading-relaxed whitespace-pre-wrap text-(--color-ink)">
 			{data.application.generatedMessage}
 		</p>
-		<button
-			onclick={copyMessage}
-			class="mt-3 rounded-md bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700"
-		>
-			{copied ? 'Kopiert ✓' : 'Text kopieren'}
+		<button onclick={copyMessage} class="ws-btn ws-btn-primary mt-4">
+			{#if copied}
+				Kopiert ✓
+			{:else}
+				Text kopieren
+			{/if}
 		</button>
 	</section>
 
-	<section class="mt-6 rounded-lg border border-gray-200 p-4">
-		<h2 class="font-medium">Anhang</h2>
-		<p class="mt-1 text-sm text-gray-500">
-			Anschreiben + deine ausgewählten Dokumente als eine PDF, zum Anhängen an die Kontaktnachricht.
-		</p>
+	<section class="ws-card mt-4 flex items-center justify-between gap-4 p-6">
+		<div>
+			<h2 class="text-sm font-semibold text-(--color-ink-soft)">Anhang</h2>
+			<p class="ws-subtitle mt-1">
+				Anschreiben + ausgewählte Dokumente als eine PDF, zum Anhängen an die Kontaktnachricht.
+			</p>
+		</div>
 		<a
 			href={resolve('/apply/[id]/pdf', { id: data.application.id })}
-			class="mt-3 inline-block rounded-md bg-gray-800 px-4 py-2 text-sm text-white transition hover:bg-gray-900"
+			class="ws-btn ws-btn-secondary shrink-0"
 		>
 			PDF herunterladen
 		</a>
 	</section>
 
-	<a href={resolve('/apply/new')} class="mt-6 inline-block text-sm text-blue-600 underline"
+	<a
+		href={resolve('/apply/new')}
+		class="mt-6 inline-block text-sm font-medium text-(--color-rust) underline"
 		>Weitere Bewerbung erstellen</a
 	>
 </div>

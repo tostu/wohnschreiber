@@ -15,77 +15,111 @@
 	} = $props();
 
 	let dialogOpen = $state(false);
+	let uploading = $state(false);
+	let deleting = $state(false);
 </script>
 
-<div class="flex flex-col gap-2 rounded-lg border border-gray-200 p-4">
-	<div class="flex items-center justify-between">
-		<h3 class="font-medium">{label}</h3>
-		<span
-			class="rounded-full px-2 py-0.5 text-xs {required
-				? 'bg-amber-100 text-amber-800'
-				: 'bg-gray-100 text-gray-500'}"
-		>
+<div class="ws-card flex flex-col gap-3 p-4">
+	<div class="flex items-center justify-between gap-2">
+		<h3 class="text-sm font-semibold">{label}</h3>
+		<span class={required ? 'ws-badge ws-badge-required' : 'ws-badge ws-badge-optional'}>
 			{required ? 'Pflicht' : 'Optional'}
 		</span>
 	</div>
 
 	{#if existing}
-		<p class="truncate text-sm text-gray-600">📄 {existing.fileName}</p>
-	{:else}
-		<p class="text-sm text-gray-400">Noch nicht hochgeladen.</p>
-	{/if}
-
-	<form
-		method="post"
-		action="?/upload"
-		enctype="multipart/form-data"
-		use:enhance
-		class="flex items-center gap-2"
-	>
-		<input type="hidden" name="type" value={type} />
-		<input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required class="text-sm" />
-		<button
-			class="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white transition hover:bg-blue-700"
-		>
-			{existing ? 'Ersetzen' : 'Hochladen'}
-		</button>
-	</form>
-
-	{#if existing}
-		<Dialog.Root bind:open={dialogOpen}>
-			<Dialog.Trigger
-				class="self-start text-sm text-red-600 underline decoration-dotted hover:text-red-700"
+		<p class="flex items-center gap-1.5 truncate text-sm text-(--color-ink-soft)">
+			<svg
+				class="h-3.5 w-3.5 shrink-0"
+				viewBox="0 0 16 16"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.4"
 			>
-				Löschen
-			</Dialog.Trigger>
-			<Dialog.Portal>
-				<Dialog.Overlay class="fixed inset-0 bg-black/40" />
-				<Dialog.Content
-					class="fixed top-1/2 left-1/2 w-80 -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-5 shadow-xl"
-				>
-					<Dialog.Title class="font-medium">Dokument löschen?</Dialog.Title>
-					<Dialog.Description class="mt-1 text-sm text-gray-500">
-						„{existing.fileName}" wird endgültig entfernt.
-					</Dialog.Description>
-					<div class="mt-4 flex justify-end gap-2">
-						<Dialog.Close class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100">
-							Abbrechen
-						</Dialog.Close>
-						<form
-							method="post"
-							action="?/delete"
-							use:enhance={() => {
-								dialogOpen = false;
-							}}
-						>
-							<input type="hidden" name="id" value={existing.id} />
-							<button class="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">
-								Löschen
-							</button>
-						</form>
-					</div>
-				</Dialog.Content>
-			</Dialog.Portal>
-		</Dialog.Root>
+				<path d="M4 1.5h5.5L12.5 4.5V14.5h-8.5z" />
+				<path d="M9 1.5V5h3" />
+			</svg>
+			<span class="truncate">{existing.fileName}</span>
+		</p>
+	{:else}
+		<p class="text-sm text-(--color-ink-faint)">Noch nicht hochgeladen.</p>
 	{/if}
+
+	<div class="flex items-center gap-3">
+		<form
+			method="post"
+			action="?/upload"
+			enctype="multipart/form-data"
+			use:enhance={() => {
+				uploading = true;
+				return async ({ update }) => {
+					await update();
+					uploading = false;
+				};
+			}}
+			class="flex flex-1 items-center gap-2"
+		>
+			<input type="hidden" name="type" value={type} />
+			<input
+				type="file"
+				name="file"
+				accept=".pdf,.jpg,.jpeg,.png"
+				required
+				disabled={uploading}
+				class="min-w-0 flex-1 text-xs text-(--color-ink-soft) file:mr-2 file:rounded-md file:border-0 file:bg-(--color-paper-line) file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-(--color-ink)"
+			/>
+			<button disabled={uploading} class="ws-btn ws-btn-secondary shrink-0 px-3 py-1.5 text-xs">
+				{#if uploading}
+					<span class="ws-spinner"></span>
+				{:else}
+					{existing ? 'Ersetzen' : 'Hochladen'}
+				{/if}
+			</button>
+		</form>
+
+		{#if existing}
+			<Dialog.Root bind:open={dialogOpen}>
+				<Dialog.Trigger class="ws-btn ws-btn-ghost shrink-0 px-2 py-1.5 text-xs">
+					Löschen
+				</Dialog.Trigger>
+				<Dialog.Portal>
+					<Dialog.Overlay class="fixed inset-0 bg-black/40" />
+					<Dialog.Content
+						class="ws-card fixed top-1/2 left-1/2 w-80 -translate-x-1/2 -translate-y-1/2 p-5 shadow-xl"
+					>
+						<Dialog.Title class="text-sm font-semibold">Dokument löschen?</Dialog.Title>
+						<Dialog.Description class="mt-1 text-sm text-(--color-ink-soft)">
+							„{existing.fileName}" wird endgültig entfernt.
+						</Dialog.Description>
+						<div class="mt-4 flex justify-end gap-2">
+							<Dialog.Close class="ws-btn ws-btn-secondary px-3 py-1.5 text-xs">
+								Abbrechen
+							</Dialog.Close>
+							<form
+								method="post"
+								action="?/delete"
+								use:enhance={() => {
+									deleting = true;
+									return async ({ update }) => {
+										await update();
+										deleting = false;
+										dialogOpen = false;
+									};
+								}}
+							>
+								<input type="hidden" name="id" value={existing.id} />
+								<button
+									disabled={deleting}
+									class="ws-btn px-3 py-1.5 text-xs"
+									style="background-color: var(--color-rust-strong); color: var(--color-paper-raised);"
+								>
+									{deleting ? 'Löscht…' : 'Löschen'}
+								</button>
+							</form>
+						</div>
+					</Dialog.Content>
+				</Dialog.Portal>
+			</Dialog.Root>
+		{/if}
+	</div>
 </div>

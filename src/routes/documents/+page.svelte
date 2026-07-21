@@ -21,25 +21,36 @@
 	function findDoc(type: string) {
 		return data.documents.find((d) => d.type === type) ?? null;
 	}
+
+	const missingRequired = $derived(requiredTypes.filter(({ type }) => !findDoc(type)).length);
 </script>
 
-<div class="mx-auto max-w-2xl px-4 py-10">
-	<h1 class="text-2xl font-semibold">Deine Dokumente</h1>
-	<p class="mt-1 text-sm text-gray-500">
+<div class="ws-shell">
+	<span class="ws-eyebrow">Schritt 2</span>
+	<h1 class="ws-title mt-2">Deine Dokumente</h1>
+	<p class="ws-subtitle">
 		Diese Dokumente werden zusammen mit dem generierten Anschreiben zu einer PDF zusammengefügt.
 	</p>
 
+	{#if missingRequired > 0}
+		<p class="ws-alert ws-alert-info mt-5">
+			Noch {missingRequired} Pflichtdokument{missingRequired > 1 ? 'e' : ''} offen.
+		</p>
+	{:else}
+		<p class="ws-alert ws-alert-success mt-5">Alle Pflichtdokumente sind vollständig ✓</p>
+	{/if}
+
 	<Tabs.Root value="required" class="mt-6">
-		<Tabs.List class="flex gap-2 border-b border-gray-200">
+		<Tabs.List class="flex gap-1 border-b border-(--color-paper-line)">
 			<Tabs.Trigger
 				value="required"
-				class="px-3 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
+				class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-(--color-ink-soft) transition-colors data-[state=active]:border-(--color-rust) data-[state=active]:text-(--color-rust)"
 			>
 				Pflichtdokumente
 			</Tabs.Trigger>
 			<Tabs.Trigger
 				value="optional"
-				class="px-3 py-2 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
+				class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-(--color-ink-soft) transition-colors data-[state=active]:border-(--color-rust) data-[state=active]:text-(--color-rust)"
 			>
 				Optionale Dokumente
 			</Tabs.Trigger>

@@ -1,3 +1,313 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+@theme {
+	--font-display: 'Fraunces', ui-serif, Georgia, serif;
+	--font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+	--color-paper: #f7f2e7;
+	--color-paper-raised: #fffcf5;
+	--color-paper-line: #e4d9c3;
+	--color-ink: #241f18;
+	--color-ink-soft: #6b6252;
+	--color-ink-faint: #9a9081;
+	--color-rust: #ad4a28;
+	--color-rust-strong: #8a3a1f;
+	--color-rust-soft: #f3e0d6;
+	--color-sage: #4d6b48;
+	--color-sage-soft: #e3ebdd;
+	--color-amber: #9c6a1c;
+	--color-amber-soft: #f2e4c8;
+
+	--color-paper-dark: #211c16;
+	--color-paper-raised-dark: #2a241c;
+	--color-paper-line-dark: #3c352a;
+	--color-ink-dark: #f1e9d8;
+	--color-ink-soft-dark: #beb2a0;
+}
+
+:root {
+	color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		color-scheme: dark;
+	}
+}
+
+html {
+	font-family: var(--font-sans);
+	background-color: var(--color-paper);
+	color: var(--color-ink);
+}
+
+body {
+	min-height: 100vh;
+	background-image: radial-gradient(circle at 1px 1px, rgb(0 0 0 / 3%) 1px, transparent 0);
+	background-size: 22px 22px;
+}
+
+@media (prefers-color-scheme: dark) {
+	html {
+		background-color: var(--color-paper-dark);
+		color: var(--color-ink-dark);
+	}
+
+	body {
+		background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 4%) 1px, transparent 0);
+	}
+}
+
+::selection {
+	background-color: var(--color-rust);
+	color: var(--color-paper-raised);
+}
+
+:focus-visible {
+	outline: 2px solid var(--color-rust);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--font-display);
+	letter-spacing: -0.01em;
+}
+
+@layer components {
+	.ws-shell {
+		max-width: 42rem;
+		margin-inline: auto;
+		padding-inline: 1.25rem;
+		padding-block: 3rem;
+	}
+
+	.ws-eyebrow {
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-rust);
+	}
+
+	.ws-title {
+		font-family: var(--font-display);
+		font-size: 2rem;
+		font-weight: 600;
+		line-height: 1.15;
+		color: var(--color-ink);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.ws-title {
+			color: var(--color-ink-dark);
+		}
+	}
+
+	.ws-subtitle {
+		margin-top: 0.375rem;
+		font-size: 0.9375rem;
+		color: var(--color-ink-soft);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.ws-subtitle {
+			color: var(--color-ink-soft-dark);
+		}
+	}
+
+	.ws-card {
+		border-radius: 0.875rem;
+		border: 1px solid var(--color-paper-line);
+		background-color: var(--color-paper-raised);
+		box-shadow: 0 1px 2px rgb(36 31 24 / 4%);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.ws-card {
+			border-color: var(--color-paper-line-dark);
+			background-color: var(--color-paper-raised-dark);
+			box-shadow: none;
+		}
+	}
+
+	.ws-label {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-ink);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.ws-label {
+			color: var(--color-ink-dark);
+		}
+	}
+
+	.ws-input {
+		border-radius: 0.5rem;
+		border: 1px solid var(--color-paper-line);
+		background-color: var(--color-paper-raised);
+		padding: 0.5rem 0.75rem;
+		font-size: 0.9375rem;
+		color: var(--color-ink);
+		transition:
+			border-color 150ms ease-out,
+			box-shadow 150ms ease-out;
+	}
+
+	.ws-input:hover {
+		border-color: var(--color-ink-faint);
+	}
+
+	.ws-input:focus {
+		outline: none;
+		border-color: var(--color-rust);
+		box-shadow: 0 0 0 3px var(--color-rust-soft);
+	}
+
+	.ws-input:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.ws-input {
+			border-color: var(--color-paper-line-dark);
+			background-color: var(--color-paper-dark);
+			color: var(--color-ink-dark);
+		}
+	}
+
+	.ws-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		border-radius: 0.5rem;
+		padding: 0.5rem 1.125rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		transition:
+			background-color 150ms ease-out,
+			transform 100ms ease-out,
+			box-shadow 150ms ease-out;
+		cursor: pointer;
+	}
+
+	.ws-btn:active {
+		transform: translateY(1px);
+	}
+
+	.ws-btn:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.ws-btn-primary {
+		background-color: var(--color-rust);
+		color: var(--color-paper-raised);
+	}
+
+	.ws-btn-primary:hover:not(:disabled) {
+		background-color: var(--color-rust-strong);
+	}
+
+	.ws-btn-secondary {
+		background-color: transparent;
+		border: 1px solid var(--color-paper-line);
+		color: var(--color-ink);
+	}
+
+	.ws-btn-secondary:hover:not(:disabled) {
+		border-color: var(--color-ink-faint);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.ws-btn-secondary {
+			border-color: var(--color-paper-line-dark);
+			color: var(--color-ink-dark);
+		}
+	}
+
+	.ws-btn-ghost {
+		background-color: transparent;
+		color: var(--color-ink-soft);
+		padding-inline: 0.25rem;
+	}
+
+	.ws-btn-ghost:hover:not(:disabled) {
+		color: var(--color-rust);
+	}
+
+	.ws-badge {
+		display: inline-flex;
+		align-items: center;
+		border-radius: 999px;
+		padding: 0.125rem 0.625rem;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+	}
+
+	.ws-badge-required {
+		background-color: var(--color-amber-soft);
+		color: var(--color-amber);
+	}
+
+	.ws-badge-optional {
+		background-color: var(--color-paper-line);
+		color: var(--color-ink-soft);
+	}
+
+	.ws-alert {
+		border-radius: 0.625rem;
+		padding: 0.75rem 1rem;
+		font-size: 0.875rem;
+		border: 1px solid transparent;
+	}
+
+	.ws-alert-error {
+		background-color: #fbe8e2;
+		border-color: #f0c4b6;
+		color: var(--color-rust-strong);
+	}
+
+	.ws-alert-success {
+		background-color: var(--color-sage-soft);
+		border-color: #cfdfc7;
+		color: var(--color-sage);
+	}
+
+	.ws-alert-info {
+		background-color: var(--color-amber-soft);
+		border-color: #e5d09f;
+		color: var(--color-amber);
+	}
+
+	.ws-spinner {
+		display: inline-block;
+		width: 0.9rem;
+		height: 0.9rem;
+		border-radius: 999px;
+		border: 2px solid currentColor;
+		border-top-color: transparent;
+		animation: ws-spin 700ms linear infinite;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ws-spinner {
+			animation-duration: 1400ms;
+		}
+	}
+
+	@keyframes ws-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+}

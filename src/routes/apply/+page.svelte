@@ -5,33 +5,35 @@
 	let { data }: { data: PageServerData } = $props();
 </script>
 
-<div class="mx-auto max-w-2xl px-4 py-10">
-	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-semibold">Deine Bewerbungen</h1>
-		<a
-			href={resolve('/apply/new')}
-			class="rounded-md bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700"
-			>Neue Bewerbung</a
-		>
+<div class="ws-shell">
+	<div class="flex items-start justify-between gap-4">
+		<div>
+			<span class="ws-eyebrow">Verlauf</span>
+			<h1 class="ws-title mt-2">Deine Bewerbungen</h1>
+		</div>
+		<a href={resolve('/apply/new')} class="ws-btn ws-btn-primary shrink-0">Neue Bewerbung</a>
 	</div>
 
-	<ul class="mt-6 flex flex-col gap-2">
+	<ul class="mt-8 flex flex-col gap-2">
 		{#each data.applications as app (app.id)}
 			<li>
 				<a
 					href={resolve('/apply/[id]', { id: app.id })}
-					class="flex items-center justify-between rounded-lg border border-gray-200 p-4 hover:border-blue-400"
+					class="ws-card flex items-center justify-between p-4 transition-colors hover:border-(--color-rust)"
 				>
-					<span>{app.listingTitle}</span>
-					<span class="text-sm text-gray-400"
+					<span class="font-medium">{app.listingTitle}</span>
+					<span class="text-sm text-(--color-ink-faint)"
 						>{new Date(app.createdAt).toLocaleDateString('de-DE')}</span
 					>
 				</a>
 			</li>
 		{:else}
-			<p class="text-sm text-gray-400">
-				Noch keine Bewerbungen. <a href={resolve('/apply/new')} class="underline">Jetzt starten</a>.
-			</p>
+			<div class="ws-card flex flex-col items-center gap-2 p-10 text-center">
+				<p class="text-sm text-(--color-ink-faint)">Noch keine Bewerbungen.</p>
+				<a href={resolve('/apply/new')} class="font-medium text-(--color-rust) underline"
+					>Jetzt starten</a
+				>
+			</div>
 		{/each}
 	</ul>
 </div>
