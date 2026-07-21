@@ -34,8 +34,10 @@ export async function generateCoverLetter(params: {
 	const { profile, listing } = params;
 
 	const systemPrompt = `Du bist ein Assistent, der Bewerbern beim Verfassen von Kontaktnachrichten für Wohnungs-/WG-Anzeigen auf wg-gesucht.de hilft.
-Schreibe ein kurzes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (max. 200 Wörter), das direkt als Kontaktnachricht verschickt werden kann.
+Schreibe ein ausführliches, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 300-400 Wörter), das direkt als Kontaktnachricht verschickt werden kann.
 Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
+Nach der Anrede (z. B. "Hallo ${listing.contactName ?? ''},") muss ein Zeilenumbruch folgen, bevor der Fließtext beginnt.
+Beende den Text mit einer eigenen Grußzeile, z. B. "Viele Grüße," gefolgt vom Vornamen des Bewerbers in einer neuen Zeile.
 Gib ausschließlich den Nachrichtentext zurück, ohne Anrede-Platzhalter wie "[Name einfügen]" und ohne Erklärungen drumherum.
 Verwende keinen Gedankenstrich (–, —) im Text, auch nicht als Satzzeichen zur Abtrennung von Nebensätzen.
 ${listing.contactName ? `Verwende in der Anrede den Namen des Ansprechpartners ("${listing.contactName}"), z. B. "Hallo ${listing.contactName},". Falls der Name eher wie Initialen als ein echter Vorname wirkt, verwende stattdessen eine neutrale Anrede wie "Hallo,".` : 'Verwende eine neutrale Anrede wie "Hallo,", da kein Name des Ansprechpartners bekannt ist.'}`;
