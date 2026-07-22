@@ -238,7 +238,6 @@ async function buildClassicCenteredCoverPage(
 	data: CoverPageData
 ) {
 	const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-	const font = template.regular;
 	const boldFont = template.bold;
 
 	let y = PAGE_HEIGHT - 180;
@@ -281,7 +280,7 @@ async function buildClassicCenteredCoverPage(
 	y -= 36;
 
 	if (data.wgAddress) {
-		drawCentered(page, data.wgAddress, font, 12, y);
+		drawCentered(page, data.wgAddress, boldFont, 12, y);
 		y -= LINE_HEIGHT;
 	}
 
@@ -291,11 +290,11 @@ async function buildClassicCenteredCoverPage(
 		drawCentered(page, 'Anschrift', boldFont, 13, y);
 		y -= LINE_HEIGHT;
 		if (data.street) {
-			drawCentered(page, data.street, font, 11, y);
+			drawCentered(page, data.street, boldFont, 11, y);
 			y -= LINE_HEIGHT;
 		}
 		if (data.city) {
-			drawCentered(page, data.city, font, 11, y);
+			drawCentered(page, data.city, boldFont, 11, y);
 			y -= LINE_HEIGHT;
 		}
 		y -= LINE_HEIGHT * 0.5;
@@ -304,13 +303,13 @@ async function buildClassicCenteredCoverPage(
 	if (data.phone) {
 		drawCentered(page, 'Telefon', boldFont, 13, y);
 		y -= LINE_HEIGHT;
-		drawCentered(page, data.phone, font, 11, y);
+		drawCentered(page, data.phone, boldFont, 11, y);
 		y -= LINE_HEIGHT * 1.5;
 	}
 
 	drawCentered(page, 'E-Mail', boldFont, 13, y);
 	y -= LINE_HEIGHT;
-	drawCentered(page, data.email, font, 11, y);
+	drawCentered(page, data.email, boldFont, 11, y);
 }
 
 export async function buildCoverPage(
