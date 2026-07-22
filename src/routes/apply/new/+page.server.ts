@@ -101,8 +101,9 @@ export const actions: Actions = {
 		});
 
 		let generatedMessage: string;
+		let coverLetterText: string;
 		try {
-			generatedMessage = await generateCoverLetter({
+			const generated = await generateCoverLetter({
 				profile: {
 					fullName: userProfile.fullName,
 					occupation: userProfile.occupation,
@@ -113,6 +114,8 @@ export const actions: Actions = {
 				},
 				listing: { title, rent, address, description, contactName }
 			});
+			generatedMessage = generated.chatMessage;
+			coverLetterText = generated.letter;
 		} catch {
 			return fail(502, {
 				message:
@@ -141,7 +144,7 @@ export const actions: Actions = {
 		};
 
 		const pdfBuffer = await buildApplicationPdf(
-			generatedMessage,
+			coverLetterText,
 			docsToAttach.map((d) => ({ storagePath: d.storagePath, mimeType: d.mimeType })),
 			coverTemplate,
 			coverFont,
