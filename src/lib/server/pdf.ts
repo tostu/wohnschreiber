@@ -161,7 +161,6 @@ function drawCentered(
 
 export interface CoverPageData {
 	fullName: string;
-	wgTitle: string;
 	wgAddress: string | null;
 	street: string | null;
 	city: string | null;
@@ -226,10 +225,6 @@ async function buildClassicCenteredCoverPage(
 	drawCentered(page, 'Anfrage', boldFont, 16, y);
 	y -= 36;
 
-	drawCentered(page, 'für die WG:', font, 12, y);
-	y -= LINE_HEIGHT;
-	drawCentered(page, data.wgTitle, font, 12, y);
-	y -= LINE_HEIGHT;
 	if (data.wgAddress) {
 		drawCentered(page, data.wgAddress, font, 12, y);
 		y -= LINE_HEIGHT;

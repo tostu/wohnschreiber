@@ -130,7 +130,6 @@ export const actions: Actions = {
 
 		const coverData: CoverPageData = {
 			fullName: userProfile.fullName,
-			wgTitle: title,
 			wgAddress: address,
 			street: userProfile.street,
 			city: userProfile.city,
