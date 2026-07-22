@@ -26,7 +26,9 @@ const LINE_HEIGHT = 16;
 
 const LETTER_MARGIN = 72;
 const LETTER_FONT_SIZE = 12;
-const LETTER_LINE_HEIGHT = 20;
+const LETTER_LINE_HEIGHT = 17;
+/** Extra room for a blank line, relative to the line height. */
+const LETTER_PARAGRAPH_GAP = 0.7;
 
 /** Drops characters the standard WinAnsi-encoded font can't render (e.g. emoji). */
 function sanitizeForFont(text: string, font: import('pdf-lib').PDFFont): string {
@@ -104,25 +106,31 @@ function drawJustifiedLine(
 	}
 }
 
-async function addCoverLetterPages(pdf: PDFDocument, text: string) {
-	const font = await pdf.embedFont(StandardFonts.Helvetica);
+async function addCoverLetterPages(pdf: PDFDocument, text: string, coverFont: CoverFont) {
+	const { regular: font } = await COVER_FONTS[coverFont](pdf);
 	const maxWidth = PAGE_WIDTH - LETTER_MARGIN * 2;
 	const lines = wrapText(text, font, maxWidth, LETTER_FONT_SIZE);
+
+	// Start of the sign-off block (Grußformel + Name): it must not be torn apart across
+	// pages, otherwise the name ends up alone on a second page.
+	const signOffStart = lines.lastIndexOf('') + 1;
+	const signOffHeight = (lines.length - signOffStart) * LETTER_LINE_HEIGHT;
 
 	let page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 	let y = PAGE_HEIGHT - LETTER_MARGIN;
 
-	for (const line of lines) {
-		if (y < LETTER_MARGIN) {
+	for (const [index, line] of lines.entries()) {
+		const needed = index === signOffStart ? signOffHeight : LETTER_LINE_HEIGHT;
+		if (y - needed + LETTER_LINE_HEIGHT < LETTER_MARGIN) {
 			page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 			y = PAGE_HEIGHT - LETTER_MARGIN;
 		}
 		if (line !== '') {
 			drawJustifiedLine(page, line, LETTER_MARGIN, y, font, LETTER_FONT_SIZE, maxWidth);
 		}
-		// Blank line marks a paragraph break: give it extra room so paragraphs read as
-		// distinct blocks rather than a slightly-longer gap between two body lines.
-		y -= line === '' ? LETTER_LINE_HEIGHT * 1.4 : LETTER_LINE_HEIGHT;
+		// Blank line marks a paragraph break: a bit of extra room so paragraphs read as
+		// distinct blocks, but small enough that a full letter still fits on one page.
+		y -= line === '' ? LETTER_LINE_HEIGHT * LETTER_PARAGRAPH_GAP : LETTER_LINE_HEIGHT;
 	}
 }
 
@@ -494,7 +502,7 @@ export async function buildApplicationPdf(
 	const pdf = await PDFDocument.create();
 
 	await buildCoverPage(pdf, coverTemplate, coverFont, coverData);
-	await addCoverLetterPages(pdf, coverLetterText);
+	await addCoverLetterPages(pdf, coverLetterText, coverFont);
 	for (const doc of documents) {
 		await appendDocument(pdf, doc.storagePath, doc.mimeType);
 	}
