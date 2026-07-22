@@ -34,7 +34,7 @@ export async function generateCoverLetter(params: {
 	const { profile, listing } = params;
 
 	const systemPrompt = `Du bist ein Assistent, der Bewerbern beim Verfassen von Kontaktnachrichten für Wohnungs-/WG-Anzeigen auf wg-gesucht.de hilft.
-Schreibe ein ausführliches, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 300-400 Wörter), das direkt als Kontaktnachricht verschickt werden kann.
+Schreibe ein prägnantes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 150-200 Wörter, passt auf eine Seite), das direkt als Kontaktnachricht verschickt werden kann.
 Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
 Nach der Anrede (z. B. "Hallo ${listing.contactName ?? ''},") muss ein Zeilenumbruch folgen, bevor der Fließtext beginnt.
 Beende den Text mit einer eigenen Grußzeile, z. B. "Viele Grüße," gefolgt vom Vornamen des Bewerbers in einer neuen Zeile.
@@ -66,7 +66,12 @@ Verfasse jetzt die Kontaktnachricht.`;
 	if (typeof content !== 'string' || !content.trim()) {
 		throw new Error('Mistral hat keinen Nachrichtentext geliefert.');
 	}
-	return stripDashes(content.trim());
+
+	const firstName = profile.fullName.trim().split(/\s+/)[0] ?? '';
+	let result = stripDashes(content.trim());
+	result = ensureGreetingLineBreak(result);
+	result = ensureSignOff(result, firstName);
+	return result;
 }
 
 /** KI ignoriert Prompt-Verbot manchmal. Ersetz Gedankenstrich hart durch Komma. */
@@ -75,4 +80,37 @@ function stripDashes(text: string): string {
 		.replace(/\s*[–—]\s*/g, ', ')
 		.replace(/,\s*,/g, ',')
 		.replace(/ {2,}/g, ' ');
+}
+
+/** KI vergisst Zeilenumbruch nach Anrede manchmal, erzwing ihn hart. */
+function ensureGreetingLineBreak(text: string): string {
+	const newlineIndex = text.indexOf('\n');
+	const greeting = newlineIndex === -1 ? text : text.slice(0, newlineIndex);
+	const rest = newlineIndex === -1 ? '' : text.slice(newlineIndex + 1);
+
+	if (!/^(hallo|hi|liebe|lieber|guten tag|sehr geehrte)/i.test(greeting.trim())) {
+		return text;
+	}
+
+	return `${greeting}\n\n${rest.replace(/^\n+/, '')}`;
+}
+
+const SIGN_OFF_PATTERN = /^(viele\s+)?gr[üu]([ßs]e?)?,?$/i;
+
+/** KI lässt Grußzeile manchmal ganz weg, häng sie notfalls hart an. */
+function ensureSignOff(text: string, firstName: string): string {
+	const lines = text.split('\n');
+	const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+	const lastLine = nonEmptyLines.at(-1)?.trim() ?? '';
+	const secondLastLine = nonEmptyLines.at(-2)?.trim() ?? '';
+
+	const hasSignOff =
+		SIGN_OFF_PATTERN.test(secondLastLine) ||
+		(lastLine.length > 0 && lastLine.length < 40 && SIGN_OFF_PATTERN.test(lastLine));
+
+	if (hasSignOff) {
+		return text;
+	}
+
+	return `${text.replace(/\s+$/, '')}\n\nViele Grüße,\n${firstName}`;
 }
