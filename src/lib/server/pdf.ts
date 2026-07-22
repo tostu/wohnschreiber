@@ -12,19 +12,11 @@ import {
 	type PDFFont
 } from 'pdf-lib';
 import * as fontkitNs from 'fontkit';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { readFile } from './storage';
+import { BITTER_REGULAR_BYTES, BITTER_BOLD_BYTES } from './fonts/bitter';
 import type { CoverTemplate, CoverFont } from './db/applications.schema';
 
 const fontkit = (fontkitNs as { default?: typeof fontkitNs }).default ?? fontkitNs;
-
-const BITTER_REGULAR_BYTES = readFileSync(
-	fileURLToPath(import.meta.resolve('@fontsource/bitter/files/bitter-latin-400-normal.woff2'))
-);
-const BITTER_BOLD_BYTES = readFileSync(
-	fileURLToPath(import.meta.resolve('@fontsource/bitter/files/bitter-latin-700-normal.woff2'))
-);
 
 const PAGE_WIDTH = 595.28; // A4 at 72dpi
 const PAGE_HEIGHT = 841.89;
@@ -216,7 +208,10 @@ export interface CoverPageData {
 	portraitOffsetY: number;
 }
 
-const COVER_FONTS: Record<CoverFont, (pdf: PDFDocument) => Promise<{ regular: PDFFont; bold: PDFFont }>> = {
+const COVER_FONTS: Record<
+	CoverFont,
+	(pdf: PDFDocument) => Promise<{ regular: PDFFont; bold: PDFFont }>
+> = {
 	serif: async (pdf) => ({
 		regular: await pdf.embedFont(StandardFonts.TimesRoman),
 		bold: await pdf.embedFont(StandardFonts.TimesRomanBold)
@@ -419,7 +414,13 @@ export async function buildSelbstauskunftPdf(data: SelbstauskunftAnswers): Promi
 	}
 
 	ensureSpace(LINE_HEIGHT * 2);
-	page.drawText('Selbstauskunft', { x: MARGIN, y, size: FONT_SIZE + 6, font: boldFont, color: rgb(0, 0, 0) });
+	page.drawText('Selbstauskunft', {
+		x: MARGIN,
+		y,
+		size: FONT_SIZE + 6,
+		font: boldFont,
+		color: rgb(0, 0, 0)
+	});
 	y -= LINE_HEIGHT * 2.5;
 
 	drawHeading('Persönliche Informationen');
@@ -439,10 +440,7 @@ export async function buildSelbstauskunftPdf(data: SelbstauskunftAnswers): Promi
 
 	drawHeading('Wohnungsbezogene Informationen');
 	drawField('Warum ziehen Sie um?', data.moveReason);
-	drawField(
-		'Gewerbliche Nutzung',
-		YES_NO_LABELS[data.commercialUse] ?? data.commercialUse
-	);
+	drawField('Gewerbliche Nutzung', YES_NO_LABELS[data.commercialUse] ?? data.commercialUse);
 	drawField('Haustiere (außer Kleintiere)', YES_NO_LABELS[data.pets] ?? data.pets);
 	drawField('Raucher:in', YES_NO_LABELS[data.smoker] ?? data.smoker);
 

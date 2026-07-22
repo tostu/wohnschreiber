@@ -58,8 +58,6 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
-		"@fontsource-variable/bitter": "^5.3.0",
-		"@fontsource/bitter": "^5.3.0",
 		"@mistralai/mistralai": "^2.5.0",
 		"bits-ui": "^2.18.1",
 		"cheerio": "^1.2.0",
