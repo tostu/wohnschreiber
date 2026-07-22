@@ -68,7 +68,7 @@
 			use:enhance={() => {
 				extracting = true;
 				return async ({ update }) => {
-					await update();
+					await update({ reset: false });
 					extracting = false;
 				};
 			}}
