@@ -42,10 +42,10 @@ export async function generateCoverLetter(params: {
 	const systemPrompt = `Du bist ein Assistent, der Bewerbern beim Verfassen von Kontaktnachrichten für Wohnungs-/WG-Anzeigen auf wg-gesucht.de hilft.
 Antworte ausschließlich mit einem JSON-Objekt (kein Markdown-Codeblock, keine Erklärung drumherum) mit genau diesen Feldern:
 - "anrede": die Anrede-Zeile, z. B. "Hallo ${listing.contactName ?? ''},"
-- "absaetze": ein Array aus 2-3 Strings, je ein inhaltlicher Absatz des Fließtexts (z. B. Vorstellung, warum du passt, Rahmenbedingungen/Einzug), zusammen ca. 300-350 Wörter
+- "absaetze": ein Array aus 1-2 kurzen Strings, zusammen ca. 60-90 Wörter: eine Mini-Vorstellung (wer du bist, worauf du dich beziehst) und ein Verweis darauf, dass die Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind
 - "gruss": eine Grußformel ohne Namen, z. B. "Viele Grüße"
 
-Schreibe prägnant, authentisch, freundlich-professionell auf Deutsch. Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
+Schreibe extrem knapp, authentisch, freundlich-professionell auf Deutsch. Keine ausführliche Begründung, keine Details zu Wohnsituation oder Motivation — nur eine sehr kurze Vorstellung und der Hinweis auf die Anhänge. Gehe kurz auf einen konkreten Bezug zur Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln.
 Verwende keinen Gedankenstrich (–, —) im Text, auch nicht als Satzzeichen zur Abtrennung von Nebensätzen.
 Verwende in "anrede" keine Platzhalter wie "[Name einfügen]".
 ${listing.contactName ? `Verwende in der Anrede den Namen des Ansprechpartners ("${listing.contactName}"), z. B. "Hallo ${listing.contactName},". Falls der Name eher wie Initialen als ein echter Vorname wirkt, verwende stattdessen eine neutrale Anrede wie "Hallo,".` : 'Verwende eine neutrale Anrede wie "Hallo,", da kein Name des Ansprechpartners bekannt ist.'}`;
