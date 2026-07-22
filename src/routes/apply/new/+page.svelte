@@ -25,7 +25,8 @@
 
 	const coverFonts = [
 		{ value: 'serif', label: 'Serif (Times)' },
-		{ value: 'sans', label: 'Serifenlos (Helvetica)' }
+		{ value: 'sans', label: 'Serifenlos (Helvetica)' },
+		{ value: 'bitter', label: 'Bitter' }
 	];
 
 	$effect(() => {

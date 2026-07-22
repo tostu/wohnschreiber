@@ -22,7 +22,7 @@ export type ApplicationStatus = (typeof applicationStatusValues)[number];
 export const coverTemplateValues = ['none', 'classic-centered'] as const;
 export type CoverTemplate = (typeof coverTemplateValues)[number];
 
-export const coverFontValues = ['serif', 'sans'] as const;
+export const coverFontValues = ['serif', 'sans', 'bitter'] as const;
 export type CoverFont = (typeof coverFontValues)[number];
 
 export const application = pgTable('application', {

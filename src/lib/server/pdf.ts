@@ -8,10 +8,23 @@ import {
 	endPath,
 	moveTo,
 	popGraphicsState,
-	pushGraphicsState
+	pushGraphicsState,
+	type PDFFont
 } from 'pdf-lib';
+import * as fontkitNs from 'fontkit';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { readFile } from './storage';
 import type { CoverTemplate, CoverFont } from './db/applications.schema';
+
+const fontkit = (fontkitNs as { default?: typeof fontkitNs }).default ?? fontkitNs;
+
+const BITTER_REGULAR_BYTES = readFileSync(
+	fileURLToPath(import.meta.resolve('@fontsource/bitter/files/bitter-latin-400-normal.woff2'))
+);
+const BITTER_BOLD_BYTES = readFileSync(
+	fileURLToPath(import.meta.resolve('@fontsource/bitter/files/bitter-latin-700-normal.woff2'))
+);
 
 const PAGE_WIDTH = 595.28; // A4 at 72dpi
 const PAGE_HEIGHT = 841.89;
@@ -172,19 +185,33 @@ export interface CoverPageData {
 	portraitOffsetY: number;
 }
 
-const COVER_FONTS: Record<CoverFont, { regular: StandardFonts; bold: StandardFonts }> = {
-	serif: { regular: StandardFonts.TimesRoman, bold: StandardFonts.TimesRomanBold },
-	sans: { regular: StandardFonts.Helvetica, bold: StandardFonts.HelveticaBold }
+const COVER_FONTS: Record<CoverFont, (pdf: PDFDocument) => Promise<{ regular: PDFFont; bold: PDFFont }>> = {
+	serif: async (pdf) => ({
+		regular: await pdf.embedFont(StandardFonts.TimesRoman),
+		bold: await pdf.embedFont(StandardFonts.TimesRomanBold)
+	}),
+	sans: async (pdf) => ({
+		regular: await pdf.embedFont(StandardFonts.Helvetica),
+		bold: await pdf.embedFont(StandardFonts.HelveticaBold)
+	}),
+	bitter: async (pdf) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		pdf.registerFontkit(fontkit as any);
+		return {
+			regular: await pdf.embedFont(BITTER_REGULAR_BYTES),
+			bold: await pdf.embedFont(BITTER_BOLD_BYTES)
+		};
+	}
 };
 
 async function buildClassicCenteredCoverPage(
 	pdf: PDFDocument,
-	template: { regular: StandardFonts; bold: StandardFonts },
+	template: { regular: PDFFont; bold: PDFFont },
 	data: CoverPageData
 ) {
 	const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-	const font = await pdf.embedFont(template.regular);
-	const boldFont = await pdf.embedFont(template.bold);
+	const font = template.regular;
+	const boldFont = template.bold;
 
 	let y = PAGE_HEIGHT - 180;
 
@@ -266,7 +293,7 @@ export async function buildCoverPage(
 ): Promise<void> {
 	if (template === 'none') return;
 	if (template === 'classic-centered') {
-		await buildClassicCenteredCoverPage(pdf, COVER_FONTS[font], data);
+		await buildClassicCenteredCoverPage(pdf, await COVER_FONTS[font](pdf), data);
 	}
 }
 
