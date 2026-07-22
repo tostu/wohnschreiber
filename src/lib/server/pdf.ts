@@ -77,6 +77,38 @@ function wrapText(
 	return lines;
 }
 
+/**
+ * Draws a line as Blocksatz (justified) by stretching the gaps between words to fill
+ * maxWidth. Short lines (last line of a paragraph, greeting, sign-off) are left as-is,
+ * since justifying them would stretch a handful of words across the whole page.
+ */
+function drawJustifiedLine(
+	page: import('pdf-lib').PDFPage,
+	line: string,
+	x: number,
+	y: number,
+	font: import('pdf-lib').PDFFont,
+	size: number,
+	maxWidth: number
+) {
+	const words = line.split(' ').filter(Boolean);
+	const textWidth = font.widthOfTextAtSize(line, size);
+
+	if (words.length < 2 || textWidth < maxWidth * 0.75) {
+		page.drawText(line, { x, y, size, font, color: rgb(0, 0, 0) });
+		return;
+	}
+
+	const wordsWidth = words.reduce((sum, word) => sum + font.widthOfTextAtSize(word, size), 0);
+	const gap = (maxWidth - wordsWidth) / (words.length - 1);
+
+	let cx = x;
+	for (const word of words) {
+		page.drawText(word, { x: cx, y, size, font, color: rgb(0, 0, 0) });
+		cx += font.widthOfTextAtSize(word, size) + gap;
+	}
+}
+
 async function addCoverLetterPages(pdf: PDFDocument, text: string) {
 	const font = await pdf.embedFont(StandardFonts.Helvetica);
 	const maxWidth = PAGE_WIDTH - LETTER_MARGIN * 2;
@@ -90,13 +122,9 @@ async function addCoverLetterPages(pdf: PDFDocument, text: string) {
 			page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 			y = PAGE_HEIGHT - LETTER_MARGIN;
 		}
-		page.drawText(line, {
-			x: LETTER_MARGIN,
-			y,
-			size: LETTER_FONT_SIZE,
-			font,
-			color: rgb(0, 0, 0)
-		});
+		if (line !== '') {
+			drawJustifiedLine(page, line, LETTER_MARGIN, y, font, LETTER_FONT_SIZE, maxWidth);
+		}
 		// Blank line marks a paragraph break: give it extra room so paragraphs read as
 		// distinct blocks rather than a slightly-longer gap between two body lines.
 		y -= line === '' ? LETTER_LINE_HEIGHT * 1.4 : LETTER_LINE_HEIGHT;

@@ -34,8 +34,9 @@ export async function generateCoverLetter(params: {
 	const { profile, listing } = params;
 
 	const systemPrompt = `Du bist ein Assistent, der Bewerbern beim Verfassen von Kontaktnachrichten für Wohnungs-/WG-Anzeigen auf wg-gesucht.de hilft.
-Schreibe ein prägnantes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 250-280 Wörter, füllt die Seite gut aus), das direkt als Kontaktnachricht verschickt werden kann.
+Schreibe ein prägnantes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 200-230 Wörter), das direkt als Kontaktnachricht verschickt werden kann.
 Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
+Gliedere den Fließtext in 2-3 inhaltliche Absätze (z. B. Vorstellung, warum du passt, Rahmenbedingungen/Einzug) und trenne die Absätze durch eine Leerzeile (doppelten Zeilenumbruch).
 Nach der Anrede (z. B. "Hallo ${listing.contactName ?? ''},") muss ein Zeilenumbruch folgen, bevor der Fließtext beginnt.
 Beende den Text mit einer eigenen Grußzeile, z. B. "Viele Grüße," gefolgt vom Vornamen des Bewerbers in einer neuen Zeile.
 Gib ausschließlich den Nachrichtentext zurück, ohne Anrede-Platzhalter wie "[Name einfügen]" und ohne Erklärungen drumherum.
@@ -71,6 +72,7 @@ Verfasse jetzt die Kontaktnachricht.`;
 	let result = stripDashes(content.trim());
 	result = ensureGreetingLineBreak(result);
 	result = ensureSignOff(result, firstName);
+	result = ensureParagraphBreaks(result);
 	return result;
 }
 
@@ -130,4 +132,42 @@ function ensureSignOff(text: string, firstName: string): string {
 	}
 
 	return `${text.replace(/\s+$/, '')}\n\nViele Grüße,\n${firstName}`;
+}
+
+/** KI liefert Fließtext manchmal als einen Block ohne Absätze, erzwing Gliederung notfalls hart. */
+function ensureParagraphBreaks(text: string): string {
+	const lines = text.split('\n');
+	const firstBlank = lines.indexOf('');
+	const lastBlank = lines.lastIndexOf('');
+	if (firstBlank === -1 || lastBlank === -1 || lastBlank <= firstBlank) {
+		return text;
+	}
+
+	const bodyLines = lines.slice(firstBlank + 1, lastBlank);
+	if (bodyLines.some((line) => line.trim() === '')) {
+		// Fließtext hat schon eigene Absätze.
+		return text;
+	}
+
+	const bodyText = bodyLines.join(' ').replace(/ {2,}/g, ' ').trim();
+	const sentences = bodyText.match(/[^.!?]+[.!?]+(\s+|$)/g) ?? [bodyText];
+	if (sentences.length < 3) {
+		return text;
+	}
+
+	const paragraphCount = sentences.length >= 6 ? 3 : 2;
+	const perParagraph = Math.ceil(sentences.length / paragraphCount);
+	const paragraphs: string[] = [];
+	for (let i = 0; i < sentences.length; i += perParagraph) {
+		paragraphs.push(
+			sentences
+				.slice(i, i + perParagraph)
+				.join('')
+				.trim()
+		);
+	}
+
+	return [...lines.slice(0, firstBlank + 1), paragraphs.join('\n\n'), ...lines.slice(lastBlank)].join(
+		'\n'
+	);
 }
