@@ -34,7 +34,7 @@ export async function generateCoverLetter(params: {
 	const { profile, listing } = params;
 
 	const systemPrompt = `Du bist ein Assistent, der Bewerbern beim Verfassen von Kontaktnachrichten für Wohnungs-/WG-Anzeigen auf wg-gesucht.de hilft.
-Schreibe ein prägnantes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 150-200 Wörter, passt auf eine Seite), das direkt als Kontaktnachricht verschickt werden kann.
+Schreibe ein prägnantes, authentisches, freundlich-professionelles Anschreiben auf Deutsch (ca. 250-280 Wörter, füllt die Seite gut aus), das direkt als Kontaktnachricht verschickt werden kann.
 Gehe konkret auf Details der Anzeige ein, wirke nicht wie eine Massenbewerbung, vermeide Floskeln, und erwähne, dass Bewerbungsunterlagen (Selbstauskunft, Nachweise) im Anhang beigefügt sind.
 Nach der Anrede (z. B. "Hallo ${listing.contactName ?? ''},") muss ein Zeilenumbruch folgen, bevor der Fließtext beginnt.
 Beende den Text mit einer eigenen Grußzeile, z. B. "Viele Grüße," gefolgt vom Vornamen des Bewerbers in einer neuen Zeile.
@@ -96,10 +96,27 @@ function ensureGreetingLineBreak(text: string): string {
 }
 
 const SIGN_OFF_PATTERN = /^(viele\s+)?gr[üu]([ßs]e?)?,?$/i;
+const COMBINED_SIGN_OFF_PATTERN = /^((?:viele\s+)?gr[üu][ßs]e?),\s*(.+)$/i;
 
 /** KI lässt Grußzeile manchmal ganz weg, häng sie notfalls hart an. */
 function ensureSignOff(text: string, firstName: string): string {
-	const lines = text.split('\n');
+	let lines = text.split('\n');
+
+	// KI schreibt Gruß+Name manchmal in einer Zeile ("Viele Grüße, Max"), hart splitten.
+	const lastNonEmptyIdx = lines.map((line) => line.trim()).findLastIndex((line) => line.length > 0);
+	if (lastNonEmptyIdx !== -1) {
+		const combinedMatch = lines[lastNonEmptyIdx].trim().match(COMBINED_SIGN_OFF_PATTERN);
+		if (combinedMatch) {
+			lines = [
+				...lines.slice(0, lastNonEmptyIdx),
+				`${combinedMatch[1]},`,
+				combinedMatch[2],
+				...lines.slice(lastNonEmptyIdx + 1)
+			];
+		}
+	}
+	text = lines.join('\n');
+
 	const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
 	const lastLine = nonEmptyLines.at(-1)?.trim() ?? '';
 	const secondLastLine = nonEmptyLines.at(-2)?.trim() ?? '';
