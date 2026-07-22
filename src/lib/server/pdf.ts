@@ -50,14 +50,17 @@ function sanitizeForFont(text: string, font: import('pdf-lib').PDFFont): string 
 	return result;
 }
 
-function wrapText(
+export function wrapText(
 	text: string,
 	font: import('pdf-lib').PDFFont,
 	maxWidth: number,
 	size: number = FONT_SIZE
 ): string[] {
 	const lines: string[] = [];
-	for (const paragraph of sanitizeForFont(text, font).split('\n')) {
+	// Erst an Zeilenumbrüchen trennen, dann sanitisieren: WinAnsi kann \n nicht kodieren,
+	// sanitizeForFont würde die Umbrüche sonst entfernen und alles zu einem Absatz machen.
+	for (const rawParagraph of text.split(/\r?\n/)) {
+		const paragraph = sanitizeForFont(rawParagraph, font);
 		if (paragraph.trim() === '') {
 			lines.push('');
 			continue;
