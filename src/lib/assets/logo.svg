@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <style>
+      .stroke-main {
+        fill: none;
+        stroke: #ad4a28;
+        stroke-width: 12;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .fill-main {
+        fill: #ad4a28;
+      }
+      .accent-stroke {
+        fill: none;
+        stroke: #ad4a28;
+        stroke-width: 10;
+        stroke-linecap: round;
+      }
+    </style>
+  </defs>
+
+  <!-- Transparent Background -->
+
+  <!-- House / Paper Top -->
+  <!-- Chimney -->
+  <path class="stroke-main" d="M 282 120 V 95 H 298 V 132" />
+
+  <!-- Roof & Paper Outline -->
+  <path class="stroke-main" d="M 165 160 L 250 90 L 335 160" />
+
+  <!-- Paper / House Body -->
+  <path class="stroke-main" d="M 190 140 V 220 H 310 V 140" />
+
+  <!-- Text Lines inside the Paper House -->
+  <line class="accent-stroke" x1="220" y1="165" x2="280" y2="165" />
+  <line class="accent-stroke" x1="220" y1="185" x2="280" y2="185" />
+  <line class="accent-stroke" x1="220" y1="205" x2="260" y2="205" />
+
+  <!-- Roller / Platen Knobs -->
+  <rect class="stroke-main" x="120" y="215" width="20" height="26" rx="6" />
+  <rect class="stroke-main" x="360" y="215" width="20" height="26" rx="6" />
+
+  <!-- Main Roller Bar -->
+  <line class="stroke-main" x1="140" y1="228" x2="360" y2="228" />
+
+  <!-- Typewriter Main Body -->
+  <path class="stroke-main" d="M 155 245 H 345 L 365 370 C 365 385 350 395 335 395 H 165 C 150 395 135 385 135 370 Z" />
+
+  <!-- Typewriter Keys Row 1 -->
+  <circle class="fill-main" cx="185" cy="305" r="11" />
+  <circle class="fill-main" cx="217" cy="305" r="11" />
+  <circle class="fill-main" cx="250" cy="305" r="11" />
+  <circle class="fill-main" cx="283" cy="305" r="11" />
+  <circle class="fill-main" cx="315" cy="305" r="11" />
+
+  <!-- Keys Row 2 / Spacebar -->
+  <rect class="fill-main" x="185" y="340" width="130" height="18" rx="9" />
+
+</svg>

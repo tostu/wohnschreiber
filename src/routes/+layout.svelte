@@ -5,7 +5,7 @@
 	import { enhance } from '$app/forms';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/logo.svg';
 	import type { LayoutServerData } from './$types';
 	import type { Snippet } from 'svelte';
 
@@ -18,7 +18,10 @@
 
 <header class="border-b border-(--color-paper-line)">
 	<nav class="ws-shell flex items-center justify-between py-0!">
-		<a href={resolve('/')} class="ws-title py-4 text-lg">Wohnschreiber</a>
+		<a href={resolve('/')} class="ws-title flex items-center gap-2 py-3 text-lg">
+			<img src={favicon} alt="" class="h-8 w-8" />
+			Wohnschreiber
+		</a>
 
 		{#if data.user}
 			<div class="hidden items-center gap-4 text-sm sm:flex">
