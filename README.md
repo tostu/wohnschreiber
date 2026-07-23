@@ -55,6 +55,16 @@ bun run test:unit    # unit tests only
 bun run lint         # prettier + eslint
 ```
 
+## Deploying (Coolify)
+
+The app ships with a `Dockerfile` (multi-stage, bun-based) building the `adapter-node` output.
+
+1. In Coolify, create a new resource from this git repo — it will detect the `Dockerfile` automatically.
+2. Set env vars: `DATABASE_URL`, `ORIGIN` (public URL, e.g. `https://yourapp.example.com`), `BETTER_AUTH_SECRET` (32+ random chars), `MISTRAL_API_KEY`, `UPLOAD_DIR` (e.g. `/app/uploads`).
+3. Mount a persistent volume at `UPLOAD_DIR` so uploaded documents survive redeploys.
+4. Point `DATABASE_URL` at a Postgres instance (a Coolify-managed Postgres service works fine), then run the schema once against it: `bun run db:push` (or `db:migrate` if you generate migrations) from a machine/shell that can reach that database.
+5. The container listens on port `3000` (`HOST=0.0.0.0`, `PORT=3000`, both set in the image) — point Coolify's proxy at that port.
+
 ## Database
 
 ```sh
