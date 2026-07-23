@@ -14,7 +14,14 @@ export const GET: RequestHandler = async (event) => {
 		error(404, 'Kein Portrait hinterlegt.');
 	}
 
-	const bytes = await readFile(row.portraitPath);
+	let bytes: Buffer;
+	try {
+		bytes = await readFile(row.portraitPath);
+	} catch (err) {
+		console.error(`portrait file missing for user ${user.id}: ${row.portraitPath}`, err);
+		error(404, 'Portrait-Datei nicht gefunden.');
+	}
+
 	return new Response(new Uint8Array(bytes), {
 		headers: {
 			'Content-Type': row.portraitMimeType,

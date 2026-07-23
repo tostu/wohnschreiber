@@ -280,10 +280,14 @@ export const actions: Actions = {
 
 		let portrait: CoverPageData['portrait'] = null;
 		if (coverTemplate !== 'none' && userProfile.portraitPath && userProfile.portraitMimeType) {
-			portrait = {
-				bytes: await readFile(userProfile.portraitPath),
-				mimeType: userProfile.portraitMimeType
-			};
+			try {
+				portrait = {
+					bytes: await readFile(userProfile.portraitPath),
+					mimeType: userProfile.portraitMimeType
+				};
+			} catch (err) {
+				console.error(`portrait file missing for user ${user.id}: ${userProfile.portraitPath}`, err);
+			}
 		}
 
 		const coverData: CoverPageData = {
@@ -298,13 +302,25 @@ export const actions: Actions = {
 			portraitOffsetY: userProfile.portraitOffsetY
 		};
 
-		const pdfBuffer = await buildApplicationPdf(
-			coverLetterText,
-			attachedDocs,
-			coverTemplate,
-			coverFont,
-			coverData
-		);
+		let pdfBuffer: Uint8Array;
+		try {
+			pdfBuffer = await buildApplicationPdf(
+				coverLetterText,
+				attachedDocs,
+				coverTemplate,
+				coverFont,
+				coverData
+			);
+		} catch (err) {
+			if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') {
+				console.error(`attached document file missing for application ${applicationId}`, err);
+				return fail(400, {
+					message:
+						'Ein angehängtes Dokument wurde nicht gefunden. Bitte lade die betroffenen Dokumente erneut hoch.'
+				});
+			}
+			throw err;
+		}
 		const pdfPath = await saveGeneratedFile(user.id, `bewerbung-${applicationId}.pdf`, pdfBuffer);
 
 		await db
