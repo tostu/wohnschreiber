@@ -33,8 +33,11 @@ export const application = pgTable('application', {
 	listingId: text('listing_id')
 		.notNull()
 		.references(() => listing.id, { onDelete: 'cascade' }),
-	generatedMessage: text('generated_message').notNull(),
-	pdfPath: text('pdf_path').notNull(),
+	generatedMessage: text('generated_message'),
+	coverLetterText: text('cover_letter_text'),
+	clarifyingQuestions: text('clarifying_questions'),
+	clarifyingAnswers: text('clarifying_answers'),
+	pdfPath: text('pdf_path'),
 	status: text('status', { enum: applicationStatusValues }).notNull().default('draft'),
 	coverTemplate: text('cover_template', { enum: coverTemplateValues }).notNull().default('none'),
 	coverFont: text('cover_font', { enum: coverFontValues }).notNull().default('serif'),

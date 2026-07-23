@@ -18,6 +18,15 @@
 	let coverTemplate = $state('none');
 	let coverFont = $state('serif');
 
+	let step = $state<'ad' | 'questions' | 'review'>('ad');
+	let applicationId = $state('');
+	let questions = $state<string[]>([]);
+	let answers = $state<string[]>([]);
+	let chatMessageText = $state('');
+	let letterText = $state('');
+	let submittingAnswers = $state(false);
+	let finalizing = $state(false);
+
 	const coverTemplates = [
 		{ value: 'none', label: 'Kein Deckblatt' },
 		{ value: 'classic-centered', label: 'Klassisch (zentriert)' }
@@ -36,6 +45,21 @@
 			address = form.extracted.address ?? '';
 			contactName = form.extracted.contactName ?? '';
 			description = form.extracted.description;
+		}
+	});
+
+	$effect(() => {
+		if (form && 'applicationId' in form && form.applicationId) {
+			applicationId = form.applicationId;
+			if ('questions' in form && Array.isArray(form.questions) && form.questions.length > 0) {
+				questions = form.questions;
+				answers = form.questions.map(() => '');
+				step = 'questions';
+			} else if ('letter' in form) {
+				chatMessageText = (form.chatMessage as string) ?? '';
+				letterText = (form.letter as string) ?? '';
+				step = 'review';
+			}
 		}
 	});
 
@@ -99,11 +123,11 @@
 
 		<form
 			method="post"
-			action="?/generate"
+			action="?/detectQuestions"
 			use:enhance={() => {
 				generating = true;
 				return async ({ update }) => {
-					await update();
+					await update({ reset: false });
 					generating = false;
 				};
 			}}
@@ -249,11 +273,11 @@
 			</div>
 
 			<div class="flex items-center gap-3">
-				<button disabled={generating} class="ws-btn ws-btn-primary">
+				<button disabled={generating || step !== 'ad'} class="ws-btn ws-btn-primary">
 					{#if generating}
 						<span class="ws-spinner"></span> Generiere Anschreiben…
 					{:else}
-						Anschreiben generieren
+						Weiter
 					{/if}
 				</button>
 
@@ -263,4 +287,131 @@
 			</div>
 		</form>
 	</section>
+
+	{#if step === 'questions'}
+		<section class="ws-card mt-4 p-6">
+			<h2 class="text-sm font-semibold text-(--color-ink-soft)">5 · Rückfragen aus der Anzeige</h2>
+			<p class="ws-subtitle mt-1">
+				Die Anzeige stellt konkrete Fragen an Bewerber. Deine Antworten fließen wörtlich ins
+				Anschreiben ein, statt dass die KI etwas erfindet.
+			</p>
+
+			<form
+				method="post"
+				action="?/submitAnswers"
+				use:enhance={() => {
+					submittingAnswers = true;
+					return async ({ update }) => {
+						await update({ reset: false });
+						submittingAnswers = false;
+					};
+				}}
+				class="mt-3 flex flex-col gap-5"
+			>
+				<input type="hidden" name="applicationId" value={applicationId} />
+				<input type="hidden" name="questions" value={JSON.stringify(questions)} />
+
+				{#each questions as question, i (question)}
+					<label class="flex flex-col gap-1.5">
+						<span class="ws-label">{question}</span>
+						<textarea
+							name={`answer_${i}`}
+							rows="2"
+							bind:value={answers[i]}
+							class="ws-input resize-none"
+						></textarea>
+					</label>
+				{/each}
+
+				<div class="flex items-center gap-3">
+					<button disabled={submittingAnswers} class="ws-btn ws-btn-primary">
+						{#if submittingAnswers}
+							<span class="ws-spinner"></span> Generiere Anschreiben…
+						{:else}
+							Weiter
+						{/if}
+					</button>
+				</div>
+			</form>
+		</section>
+	{/if}
+
+	{#if step === 'review'}
+		<section class="ws-card mt-4 p-6">
+			<h2 class="text-sm font-semibold text-(--color-ink-soft)">6 · Anschreiben überarbeiten</h2>
+			<p class="ws-subtitle mt-1">
+				Prüfe die generierten Texte und passe sie bei Bedarf an, bevor das PDF erstellt wird.
+			</p>
+
+			<form
+				method="post"
+				action="?/finalize"
+				use:enhance={({ action }) => {
+					const isRegenerate = action.search.includes('generateText');
+					if (isRegenerate) {
+						generating = true;
+					} else {
+						finalizing = true;
+					}
+					return async ({ update }) => {
+						await update({ reset: false });
+						if (isRegenerate) {
+							generating = false;
+						} else {
+							finalizing = false;
+						}
+					};
+				}}
+				class="mt-3 flex flex-col gap-5"
+			>
+				<input type="hidden" name="applicationId" value={applicationId} />
+
+				<label class="flex flex-col gap-1.5">
+					<span class="ws-label">Kontaktnachricht (Chat)</span>
+					<textarea
+						name="chatMessage"
+						rows="5"
+						bind:value={chatMessageText}
+						class="ws-input resize-none"
+					></textarea>
+				</label>
+
+				<label class="flex flex-col gap-1.5">
+					<span class="ws-label">Anschreiben (PDF)</span>
+					<textarea
+						name="coverLetterText"
+						rows="16"
+						bind:value={letterText}
+						class="ws-input resize-none"
+					></textarea>
+				</label>
+
+				<div class="flex items-center gap-3">
+					<button
+						type="submit"
+						formaction="?/generateText"
+						disabled={generating || finalizing}
+						class="ws-btn ws-btn-secondary"
+					>
+						{#if generating}
+							<span class="ws-spinner"></span> Generiere…
+						{:else}
+							Anschreiben neu generieren
+						{/if}
+					</button>
+					<button disabled={finalizing} class="ws-btn ws-btn-primary">
+						{#if finalizing}
+							<span class="ws-spinner"></span> Erstelle PDF…
+						{:else}
+							Bewerbung abschließen
+						{/if}
+					</button>
+				</div>
+
+				{#if form && 'message' in form && form.message}
+					<p class="ws-alert ws-alert-error px-3 py-1.5">{form.message}</p>
+				{/if}
+			</form>
+		</section>
+	{/if}
 </div>

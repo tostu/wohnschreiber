@@ -12,6 +12,7 @@ export const load: PageServerLoad = async (event) => {
 		.select({
 			id: application.id,
 			generatedMessage: application.generatedMessage,
+			pdfPath: application.pdfPath,
 			createdAt: application.createdAt,
 			status: application.status,
 			listingTitle: listing.title,
@@ -25,7 +26,13 @@ export const load: PageServerLoad = async (event) => {
 		error(404, 'Bewerbung nicht gefunden.');
 	}
 
-	return { application: row };
+	if (!row.pdfPath) {
+		redirect(302, '/apply/new');
+	}
+
+	return {
+		application: { ...row, pdfPath: row.pdfPath, generatedMessage: row.generatedMessage ?? '' }
+	};
 };
 
 export const actions: Actions = {

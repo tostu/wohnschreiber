@@ -13,7 +13,7 @@ export const GET: RequestHandler = async (event) => {
 		.from(application)
 		.where(and(eq(application.id, event.params.id), eq(application.userId, user.id)));
 
-	if (!row) {
+	if (!row || !row.pdfPath) {
 		error(404, 'Bewerbung nicht gefunden.');
 	}
 

@@ -13,9 +13,13 @@ import {
 	type CoverTemplate,
 	type CoverFont
 } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { fetchListingInfo } from '$lib/server/listing-scraper';
-import { generateCoverLetter } from '$lib/server/mistral';
+import {
+	generateCoverLetter,
+	detectClarifyingQuestions,
+	type ClarifyingAnswer
+} from '$lib/server/mistral';
 import { buildApplicationPdf, type CoverPageData } from '$lib/server/pdf';
 import { readFile, saveGeneratedFile } from '$lib/server/storage';
 import { randomUUID } from 'node:crypto';
@@ -26,6 +30,53 @@ export const load: PageServerLoad = async (event) => {
 	const docs = await db.select().from(document).where(eq(document.userId, user.id));
 	return { profile: userProfile ?? null, documents: docs };
 };
+
+async function runGeneration(userId: string, applicationId: string) {
+	const [row] = await db
+		.select()
+		.from(application)
+		.innerJoin(listing, eq(application.listingId, listing.id))
+		.where(and(eq(application.id, applicationId), eq(application.userId, userId)));
+
+	if (!row) {
+		throw new Error('Bewerbung nicht gefunden.');
+	}
+
+	const [userProfile] = await db.select().from(profile).where(eq(profile.userId, userId));
+	if (!userProfile) {
+		throw new Error('Bitte zuerst deine Bewerberdaten unter /profile ausfüllen.');
+	}
+
+	const answers: ClarifyingAnswer[] = row.application.clarifyingAnswers
+		? JSON.parse(row.application.clarifyingAnswers)
+		: [];
+
+	const generated = await generateCoverLetter({
+		profile: {
+			fullName: userProfile.fullName,
+			occupation: userProfile.occupation,
+			moveInEarliest: userProfile.moveInEarliest,
+			householdSize: userProfile.householdSize,
+			monthlyNetIncome: userProfile.monthlyNetIncome,
+			aboutMe: userProfile.aboutMe
+		},
+		listing: {
+			title: row.listing.title,
+			rent: row.listing.rent,
+			address: row.listing.address,
+			description: row.listing.description,
+			contactName: row.listing.contactName
+		},
+		answers
+	});
+
+	await db
+		.update(application)
+		.set({ generatedMessage: generated.chatMessage, coverLetterText: generated.letter })
+		.where(eq(application.id, applicationId));
+
+	return { chatMessage: generated.chatMessage, letter: generated.letter };
+}
 
 export const actions: Actions = {
 	extract: async (event) => {
@@ -50,7 +101,7 @@ export const actions: Actions = {
 		return { extracted: { ...info, url } };
 	},
 
-	generate: async (event) => {
+	detectQuestions: async (event) => {
 		const user = requireUser(event);
 		const formData = await event.request.formData();
 
@@ -100,28 +151,132 @@ export const actions: Actions = {
 			description
 		});
 
-		let generatedMessage: string;
-		let coverLetterText: string;
+		const applicationId = randomUUID();
+		await db.insert(application).values({
+			id: applicationId,
+			userId: user.id,
+			listingId,
+			coverTemplate,
+			coverFont
+		});
+
+		if (docsToAttach.length > 0) {
+			await db
+				.insert(applicationDocument)
+				.values(docsToAttach.map((d) => ({ applicationId, documentId: d.id })));
+		}
+
+		const questions = await detectClarifyingQuestions({ title, description });
+
+		if (questions.length > 0) {
+			await db
+				.update(application)
+				.set({ clarifyingQuestions: JSON.stringify(questions) })
+				.where(eq(application.id, applicationId));
+
+			return { applicationId, questions };
+		}
+
 		try {
-			const generated = await generateCoverLetter({
-				profile: {
-					fullName: userProfile.fullName,
-					occupation: userProfile.occupation,
-					moveInEarliest: userProfile.moveInEarliest,
-					householdSize: userProfile.householdSize,
-					monthlyNetIncome: userProfile.monthlyNetIncome,
-					aboutMe: userProfile.aboutMe
-				},
-				listing: { title, rent, address, description, contactName }
-			});
-			generatedMessage = generated.chatMessage;
-			coverLetterText = generated.letter;
+			const generated = await runGeneration(user.id, applicationId);
+			return { applicationId, questions: [], ...generated };
 		} catch {
 			return fail(502, {
 				message:
 					'Die Nachricht konnte nicht generiert werden (Mistral-Fehler). Bitte später erneut versuchen.'
 			});
 		}
+	},
+
+	submitAnswers: async (event) => {
+		const user = requireUser(event);
+		const formData = await event.request.formData();
+
+		const applicationId = formData.get('applicationId')?.toString();
+		const questionsRaw = formData.get('questions')?.toString();
+		if (!applicationId || !questionsRaw) {
+			return fail(400, { message: 'Ungültige Anfrage.' });
+		}
+
+		const questions: string[] = JSON.parse(questionsRaw);
+		const answers: ClarifyingAnswer[] = questions.map((question, i) => ({
+			question,
+			answer: formData.get(`answer_${i}`)?.toString().trim() ?? ''
+		}));
+
+		await db
+			.update(application)
+			.set({ clarifyingAnswers: JSON.stringify(answers) })
+			.where(and(eq(application.id, applicationId), eq(application.userId, user.id)));
+
+		try {
+			const generated = await runGeneration(user.id, applicationId);
+			return { applicationId, questions: [], ...generated };
+		} catch {
+			return fail(502, {
+				message:
+					'Die Nachricht konnte nicht generiert werden (Mistral-Fehler). Bitte später erneut versuchen.'
+			});
+		}
+	},
+
+	generateText: async (event) => {
+		const user = requireUser(event);
+		const formData = await event.request.formData();
+		const applicationId = formData.get('applicationId')?.toString();
+		if (!applicationId) {
+			return fail(400, { message: 'Ungültige Anfrage.' });
+		}
+
+		try {
+			const generated = await runGeneration(user.id, applicationId);
+			return { applicationId, questions: [], ...generated };
+		} catch {
+			return fail(502, {
+				message:
+					'Die Nachricht konnte nicht generiert werden (Mistral-Fehler). Bitte später erneut versuchen.'
+			});
+		}
+	},
+
+	finalize: async (event) => {
+		const user = requireUser(event);
+		const formData = await event.request.formData();
+
+		const applicationId = formData.get('applicationId')?.toString();
+		const chatMessage = formData.get('chatMessage')?.toString() ?? '';
+		const coverLetterText = formData.get('coverLetterText')?.toString() ?? '';
+		if (!applicationId || !coverLetterText) {
+			return fail(400, { message: 'Ungültige Anfrage.' });
+		}
+
+		const [row] = await db
+			.select()
+			.from(application)
+			.innerJoin(listing, eq(application.listingId, listing.id))
+			.where(and(eq(application.id, applicationId), eq(application.userId, user.id)));
+
+		if (!row) {
+			return fail(404, { message: 'Bewerbung nicht gefunden.' });
+		}
+
+		const [userProfile] = await db.select().from(profile).where(eq(profile.userId, user.id));
+		if (!userProfile) {
+			return fail(400, { message: 'Bitte zuerst deine Bewerberdaten unter /profile ausfüllen.' });
+		}
+
+		const attachedDocs = await db
+			.select({
+				storagePath: document.storagePath,
+				mimeType: document.mimeType
+			})
+			.from(applicationDocument)
+			.innerJoin(document, eq(applicationDocument.documentId, document.id))
+			.where(eq(applicationDocument.applicationId, applicationId));
+
+		const coverTemplate = row.application.coverTemplate;
+		const coverFont = row.application.coverFont;
+		const address = row.listing.address;
 
 		let portrait: CoverPageData['portrait'] = null;
 		if (coverTemplate !== 'none' && userProfile.portraitPath && userProfile.portraitMimeType) {
@@ -145,29 +300,17 @@ export const actions: Actions = {
 
 		const pdfBuffer = await buildApplicationPdf(
 			coverLetterText,
-			docsToAttach.map((d) => ({ storagePath: d.storagePath, mimeType: d.mimeType })),
+			attachedDocs,
 			coverTemplate,
 			coverFont,
 			coverData
 		);
-		const applicationId = randomUUID();
 		const pdfPath = await saveGeneratedFile(user.id, `bewerbung-${applicationId}.pdf`, pdfBuffer);
 
-		await db.insert(application).values({
-			id: applicationId,
-			userId: user.id,
-			listingId,
-			generatedMessage,
-			pdfPath,
-			coverTemplate,
-			coverFont
-		});
-
-		if (docsToAttach.length > 0) {
-			await db
-				.insert(applicationDocument)
-				.values(docsToAttach.map((d) => ({ applicationId, documentId: d.id })));
-		}
+		await db
+			.update(application)
+			.set({ generatedMessage: chatMessage, coverLetterText, pdfPath })
+			.where(eq(application.id, applicationId));
 
 		redirect(302, `/apply/${applicationId}`);
 	}
