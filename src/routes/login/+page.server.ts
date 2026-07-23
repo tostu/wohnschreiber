@@ -24,6 +24,7 @@ export const actions: Actions = {
 			if (error instanceof APIError) {
 				return fail(400, { message: error.message || 'Anmeldung fehlgeschlagen.', mode: 'signIn' });
 			}
+			console.error('signInEmail failed:', error);
 			return fail(500, { message: 'Unerwarteter Fehler.', mode: 'signIn' });
 		}
 
@@ -51,6 +52,7 @@ export const actions: Actions = {
 					mode: 'signUp'
 				});
 			}
+			console.error('signUpEmail failed:', error);
 			return fail(500, { message: 'Unerwarteter Fehler.', mode: 'signUp' });
 		}
 
