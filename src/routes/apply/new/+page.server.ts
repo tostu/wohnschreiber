@@ -20,7 +20,7 @@ import {
 	detectClarifyingQuestions,
 	type ClarifyingAnswer
 } from '$lib/server/mistral';
-import { buildApplicationPdf, type CoverPageData } from '$lib/server/pdf';
+import { buildApplicationPdf, PdfTooLargeError, type CoverPageData } from '$lib/server/pdf';
 import { readFile, saveGeneratedFile } from '$lib/server/storage';
 import { randomUUID } from 'node:crypto';
 
@@ -317,6 +317,13 @@ export const actions: Actions = {
 				return fail(400, {
 					message:
 						'Ein angehängtes Dokument wurde nicht gefunden. Bitte lade die betroffenen Dokumente erneut hoch.'
+				});
+			}
+			if (err instanceof PdfTooLargeError) {
+				console.error(`generated PDF too large for application ${applicationId}: ${err.size} bytes`);
+				return fail(400, {
+					message:
+						'Die erstellte Bewerbung überschreitet 10 MB. Bitte verkleinere oder entferne große angehängte PDF-Dokumente.'
 				});
 			}
 			throw err;

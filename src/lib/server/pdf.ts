@@ -12,6 +12,7 @@ import {
 	type PDFFont
 } from 'pdf-lib';
 import * as fontkitNs from 'fontkit';
+import sharp from 'sharp';
 import { readFile } from './storage';
 import { BITTER_REGULAR_BYTES, BITTER_BOLD_BYTES } from './fonts/bitter';
 import type { CoverTemplate, CoverFont } from './db/applications.schema';
@@ -134,6 +135,28 @@ async function addCoverLetterPages(pdf: PDFDocument, text: string, coverFont: Co
 	}
 }
 
+/**
+ * Recompresses an uploaded image before embedding so a single phone photo
+ * (often several MB) doesn't blow the merged PDF past the 10 MB cap. Downscales
+ * the longest edge to `maxDimension` and re-encodes as JPEG. `.rotate()` bakes in
+ * the EXIF orientation, which is otherwise lost once the raw bytes are embedded.
+ */
+async function compressImage(bytes: Buffer, maxDimension: number): Promise<Buffer> {
+	return sharp(bytes)
+		.rotate()
+		.resize({
+			width: maxDimension,
+			height: maxDimension,
+			fit: 'inside',
+			withoutEnlargement: true
+		})
+		.jpeg({ quality: 80, mozjpeg: true })
+		.toBuffer();
+}
+
+/** Longest-edge cap for a full-page scan/photo (~150dpi on A4). */
+const DOC_IMAGE_MAX_DIMENSION = 1800;
+
 async function appendDocument(pdf: PDFDocument, storagePath: string, mimeType: string) {
 	const bytes = await readFile(storagePath);
 
@@ -144,14 +167,13 @@ async function appendDocument(pdf: PDFDocument, storagePath: string, mimeType: s
 		return;
 	}
 
-	if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
-		const image = await pdf.embedJpg(bytes);
-		drawImagePage(pdf, image);
-		return;
-	}
-
-	if (mimeType === 'image/png') {
-		const image = await pdf.embedPng(bytes);
+	if (
+		mimeType === 'image/jpeg' ||
+		mimeType === 'image/jpg' ||
+		mimeType === 'image/png'
+	) {
+		const compressed = await compressImage(Buffer.from(bytes), DOC_IMAGE_MAX_DIMENSION);
+		const image = await pdf.embedJpg(compressed);
 		drawImagePage(pdf, image);
 		return;
 	}
@@ -252,10 +274,9 @@ async function buildClassicCenteredCoverPage(
 		const radius = 100;
 		const cx = PAGE_WIDTH / 2;
 		const cy = y;
-		const image =
-			data.portrait.mimeType === 'image/png'
-				? await pdf.embedPng(data.portrait.bytes)
-				: await pdf.embedJpg(data.portrait.bytes);
+		// Circle is 200pt wide; 600px covers it crisply even on retina/print.
+		const compressed = await compressImage(Buffer.from(data.portrait.bytes), 600);
+		const image = await pdf.embedJpg(compressed);
 
 		const scale = Math.max((radius * 2) / image.width, (radius * 2) / image.height);
 		const width = image.width * scale;
@@ -492,6 +513,17 @@ export async function buildSelbstauskunftPdf(data: SelbstauskunftAnswers): Promi
 	return Buffer.from(bytes);
 }
 
+/** Hard cap on the generated application PDF. */
+export const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
+/** Thrown when the finished PDF exceeds {@link MAX_PDF_BYTES}. */
+export class PdfTooLargeError extends Error {
+	constructor(public readonly size: number) {
+		super(`generated PDF is ${size} bytes, exceeds ${MAX_PDF_BYTES}`);
+		this.name = 'PdfTooLargeError';
+	}
+}
+
 export async function buildApplicationPdf(
 	coverLetterText: string,
 	documents: { storagePath: string; mimeType: string }[],
@@ -508,5 +540,11 @@ export async function buildApplicationPdf(
 	}
 
 	const bytes = await pdf.save();
+	// Image uploads are recompressed, but attached PDFs are copied as-is: a scan-heavy
+	// PDF attachment can still push us over the cap. Fail loudly instead of emitting an
+	// oversized file the recipient's mail server may reject.
+	if (bytes.length > MAX_PDF_BYTES) {
+		throw new PdfTooLargeError(bytes.length);
+	}
 	return Buffer.from(bytes);
 }
