@@ -1,13 +1,36 @@
-# wohnschreiber
+# Wohnschreiber
 
-App that helps you apply to WG-Gesucht room listings faster: paste a listing URL, it scrapes the
-key facts (rent, address, contact name) and generates a tailored application (cover letter,
-Selbstauskunft) using Mistral AI, backed by your saved profile and documents.
+Apply to rooms and flats faster. Paste a listing URL (WG-Gesucht, Immowelt, ImmoScout24), and
+Wohnschreiber scrapes the key facts (rent, address, contact name) and uses Mistral AI to write a
+tailored cover letter. It builds a PDF with an optional cover page, your Selbstauskunft and the
+documents you pick, all from a profile and document set you fill in once.
+
+![Home](docs/screenshots/home.png)
+
+## Features
+
+- **One-time profile:** name, occupation, income, move-in date, short bio, optional portrait.
+- **Document vault:** upload Selbstauskunft, Schufa, income proofs and more; pick which ones go into each application.
+- **Listing import:** extract title, rent, address and contact from a URL, or paste the text manually.
+- **AI cover letter:** generated per listing, with clarifying questions where the ad leaves gaps.
+- **PDF export:** cover page templates and fonts, images compressed to keep the file under 10 MB.
+- **Application history:** track status (draft, contacted, rejected, accepted).
+- **i18n:** English and German via Paraglide.
+
+## Screenshots
+
+| Profile | New application |
+| --- | --- |
+| ![Profile](docs/screenshots/profile.png) | ![New application](docs/screenshots/new-application.png) |
+
+| Applications | Documents |
+| --- | --- |
+| ![Applications](docs/screenshots/applications.png) | ![Documents](docs/screenshots/documents.png) |
 
 ## Stack
 
-SvelteKit (TypeScript), Tailwind CSS, Drizzle ORM (PostgreSQL), better-auth, Paraglide (i18n:
-en/de), Playwright + Vitest, Mistral AI.
+SvelteKit (TypeScript), Tailwind CSS, Drizzle ORM (PostgreSQL), better-auth, Paraglide, Playwright
+and Vitest, Mistral AI.
 
 ## Setup
 
@@ -64,6 +87,29 @@ The app ships with a `Dockerfile` (multi-stage, bun-based) building the `adapter
 3. Mount a persistent volume at `UPLOAD_DIR` so uploaded documents survive redeploys.
 4. Point `DATABASE_URL` at a Postgres instance (a Coolify-managed Postgres service works fine), then run the schema once against it: `bun run db:push` (or `db:migrate` if you generate migrations) from a machine/shell that can reach that database.
 5. The container listens on port `3000` (`HOST=0.0.0.0`, `PORT=3000`, both set in the image) — point Coolify's proxy at that port.
+
+### Listing extraction & bot protection
+
+Pasting a listing URL scrapes the key facts. WG-Gesucht is fetched over plain HTTP.
+Immowelt (DataDome) and ImmoScout24 (AWS WAF captcha) sit behind bot protection
+that blocks plain HTTP requests **and every headless-browser mode** (vanilla
+headless, Chrome's new headless, and patched/stealth builds were all verified to
+get 401/403). Only a real **headed** Chromium passes their JS challenge, so those
+hosts are rendered with headed Playwright. ImmoScout24 additionally needs an origin
+"warmup" visit to obtain a WAF token before the expose loads (handled in
+`browser-fetch.ts`).
+
+A headed browser needs a display. In production the `Dockerfile` installs Chromium,
+its system libraries and Xvfb, and starts the server with `xvfb-run` — so it runs
+windowless on the (display-less) server. This works out of the box in Coolify.
+
+- **Local dev:** browser scraping is **off by default** so no browser window pops
+  up while developing (macOS has no Xvfb). Immowelt/ImmoScout URLs then fall back
+  to the manual entry fields. Set `ENABLE_BROWSER_SCRAPE=1` to test it locally
+  (a Chromium window will open). It is always on when `NODE_ENV=production`.
+- The runtime image is larger (~500 MB) and these scrapes take a few seconds.
+- DataDome/AWS WAF score datacenter/VPS IPs aggressively. Extraction can still be
+  blocked from some hosting IPs; when it is, the app falls back to manual entry.
 
 ## Database
 
